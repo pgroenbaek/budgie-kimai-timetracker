@@ -37,7 +37,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         Object(relative_to: parent);
         settings = c_settings;
 
-        var vbox = new Gtk.Box(Orientation.VERTICAL, 6);
+        var vbox = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
         vbox.set_margin_top(6);
         vbox.set_margin_bottom(6);
         vbox.set_margin_start(6);
@@ -53,7 +53,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox.add(lbl_task);
         vbox.add(lbl_duration);
 
-        var hbox_buttons = new Gtk.Box(Orientation.HORIZONTAL, 6);
+        var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
         btn_start = new Gtk.Button.with_label("▶ Start");
         btn_stop  = new Gtk.Button.with_label("■ Stop");
         hbox_buttons.add(btn_start);
@@ -79,7 +79,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                 int h = elapsed_seconds / 3600;
                 int m = (elapsed_seconds % 3600) / 60;
                 int s = elapsed_seconds % 60;
-                lbl_duration.text = "Duration: %02d:%02d:%02d".printf(h, m, s);
+                lbl_duration.set_text("Duration: %02d:%02d:%02d".printf(h, m, s));
                 return true;
             });
         }
@@ -93,52 +93,67 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     }
 
     private void show_new_timer_dialog() {
-        var dialog = new Gtk.Dialog("New Timer", this, Gtk.DialogFlags.MODAL);
+        var dialog = new Gtk.Dialog.with_buttons(
+            "New Timer",
+            (Gtk.Window) this.get_toplevel(),
+            Gtk.DialogFlags.MODAL,
+            "Start Timer", Gtk.ResponseType.OK,
+            "Cancel", Gtk.ResponseType.CANCEL
+        );
+
         var content = dialog.get_content_area();
         var grid = new Gtk.Grid();
         grid.set_row_spacing(6);
         grid.set_column_spacing(6);
+        grid.set_margin_top(6);
+        grid.set_margin_bottom(6);
+        grid.set_margin_start(6);
+        grid.set_margin_end(6);
         content.add(grid);
 
-        var lbl_client = new Gtk.Label("Client:");
+        // Local variables renamed to avoid shadowing class members
+        var dlg_lbl_client = new Gtk.Label("Client:");
+        dlg_lbl_client.set_halign(Gtk.Align.START);
         var combo_client = new Gtk.ComboBoxText();
         combo_client.append_text("ACME Corp");
         combo_client.append_text("Globex Inc");
 
-        var lbl_project = new Gtk.Label("Project:");
+        var dlg_lbl_project = new Gtk.Label("Project:");
+        dlg_lbl_project.set_halign(Gtk.Align.START);
         var combo_project = new Gtk.ComboBoxText();
         combo_project.append_text("Website Redesign");
         combo_project.append_text("Mobile App");
 
-        var lbl_task = new Gtk.Label("Task:");
+        var dlg_lbl_task = new Gtk.Label("Task:");
+        dlg_lbl_task.set_halign(Gtk.Align.START);
         var combo_task = new Gtk.ComboBoxText();
         combo_task.append_text("Coding Applet");
         combo_task.append_text("Design UI");
 
-        var lbl_desc = new Gtk.Label("Description:");
+        var dlg_lbl_desc = new Gtk.Label("Description:");
+        dlg_lbl_desc.set_halign(Gtk.Align.START);
         var entry_desc = new Gtk.Entry();
 
-        grid.attach(lbl_client, 0, 0, 1, 1);
+        grid.attach(dlg_lbl_client, 0, 0, 1, 1);
         grid.attach(combo_client, 1, 0, 1, 1);
-        grid.attach(lbl_project, 0, 1, 1, 1);
+        grid.attach(dlg_lbl_project, 0, 1, 1, 1);
         grid.attach(combo_project, 1, 1, 1, 1);
-        grid.attach(lbl_task, 0, 2, 1, 1);
+        grid.attach(dlg_lbl_task, 0, 2, 1, 1);
         grid.attach(combo_task, 1, 2, 1, 1);
-        grid.attach(lbl_desc, 0, 3, 1, 1);
+        grid.attach(dlg_lbl_desc, 0, 3, 1, 1);
         grid.attach(entry_desc, 1, 3, 1, 1);
-
-        dialog.add_button("Start Timer", Gtk.ResponseType.OK);
-        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL);
 
         dialog.show_all();
         if (dialog.run() == Gtk.ResponseType.OK) {
-            lbl_client.text = "Client: " + combo_client.get_active_text();
-            lbl_project.text = "Project: " + combo_project.get_active_text();
-            lbl_task.text = "Task: " + combo_task.get_active_text();
+            lbl_client.set_text("Client: " + (combo_client.get_active_text() ?? "-"));
+            lbl_project.set_text("Project: " + (combo_project.get_active_text() ?? "-"));
+            lbl_task.set_text("Task: " + (combo_task.get_active_text() ?? "-"));
             elapsed_seconds = 0;
-            lbl_duration.text = "Duration: 00:00:00";
+            lbl_duration.set_text("Duration: 00:00:00");
             start_timer();
         }
+
         dialog.destroy();
     }
+
 }
