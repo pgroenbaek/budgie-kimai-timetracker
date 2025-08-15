@@ -45,7 +45,7 @@ public class KimaiTimetrackerApplet : Budgie.Applet {
 
         event_box = new Gtk.EventBox();
         this.add(event_box);
-        applet_icon = new Gtk.Image.from_icon_name("appointment-new", Gtk.IconSize.MENU);
+        applet_icon = new Gtk.Image.from_icon_name("kimai-timetracker", Gtk.IconSize.MENU);
         event_box.add(applet_icon);
 
         popover = new KimaiTimetrackerWindow(event_box, settings);
