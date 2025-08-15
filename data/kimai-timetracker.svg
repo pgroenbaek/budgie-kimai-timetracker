@@ -4,15 +4,15 @@
    height="16"
    viewBox="0 0 16 16"
    version="1.1"
-   id="svg16"
-   sodipodi:docname="camera-whitebalance-disabled2.svg"
+   id="svg7"
+   sodipodi:docname="document-open-recent.svg"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <sodipodi:namedview
-     id="namedview18"
+     id="namedview9"
      pagecolor="#ffffff"
      bordercolor="#000000"
      borderopacity="0.25"
@@ -21,17 +21,17 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      showgrid="false"
-     inkscape:zoom="53.5"
-     inkscape:cx="4.4859813"
-     inkscape:cy="8.0186916"
+     inkscape:zoom="54"
+     inkscape:cx="8"
+     inkscape:cy="8"
      inkscape:window-width="1883"
      inkscape:window-height="1052"
      inkscape:window-x="37"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg16" />
+     inkscape:current-layer="svg7" />
   <defs
-     id="defs12">
+     id="defs3">
     <style
        id="current-color-scheme"
        type="text/css">
@@ -39,8 +39,8 @@
   </style>
   </defs>
   <path
-     style="fill:#ffffff;opacity:0.3;fill-opacity:1"
+     style="fill:#ffffff"
      class="ColorScheme-Text"
-     d="M 8 1 C 4.6863 1 2 3.6863 2 7 C 2 9.087 3.0708 10.9251 4.6875 12 L 4 12 C 2 12 2 14 2 14 L 2 15 L 14 15 L 14 14 C 14 14 14 12 12 12 L 11.3125 12 C 12.9292 10.9251 14 9.087 14 7 C 14 3.6863 11.3137 1 8 1 z M 8 5.0039062 A 2 2 0 0 1 10 7.0039062 A 2 2 0 0 1 8 9.0039062 A 2 2 0 0 1 6 7.0039062 A 2 2 0 0 1 8 5.0039062 z"
-     id="path14" />
+     d="M 8 1 C 6.20855 1 4.4176312 1.6839313 3.0507812 3.0507812 C 0.31708125 5.7844812 0.31708125 10.215519 3.0507812 12.949219 C 5.7844812 15.682919 10.215519 15.682919 12.949219 12.949219 C 15.682919 10.215519 15.682919 5.7844812 12.949219 3.0507812 C 11.582369 1.6839313 9.79145 1 8 1 z M 7.9277344 3 A 5 5 0 0 1 11.535156 4.4648438 A 5 5 0 0 1 11.535156 11.535156 A 5 5 0 0 1 4.4648438 11.535156 A 5 5 0 0 1 4.4648438 4.4648438 A 5 5 0 0 1 7.9277344 3 z M 6.9960938 4 L 6.9960938 4.1328125 L 6.9960938 8.4140625 L 8.703125 10.121094 L 9.3183594 10.736328 L 9.4101562 10.828125 L 10.117188 10.121094 L 10.824219 9.4140625 L 10.730469 9.3203125 L 10.117188 8.7070312 L 8.9960938 7.5859375 L 8.9960938 4.1328125 L 8.9960938 4 L 6.9960938 4 z"
+     id="path5" />
 </svg>
