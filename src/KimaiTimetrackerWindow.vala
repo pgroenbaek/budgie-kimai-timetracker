@@ -28,6 +28,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Button btn_start;
     private Gtk.Button btn_stop;
     private Gtk.Button btn_new_timer;
+    private Gtk.Button btn_settings;
 
     private uint timer_id = 0;
     private int elapsed_seconds = 0;
@@ -43,17 +44,26 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox.set_margin_end(6);
         add(vbox);
 
-        lbl_client = new Gtk.Label("Client: -"); vbox.add(lbl_client);
-        lbl_project = new Gtk.Label("Project: -"); vbox.add(lbl_project);
-        lbl_task = new Gtk.Label("Task: -"); vbox.add(lbl_task);
-        lbl_duration = new Gtk.Label("Duration: 00:00:00"); vbox.add(lbl_duration);
+        lbl_client = new Gtk.Label("Client: -");
+        lbl_project = new Gtk.Label("Project: -");
+        lbl_task = new Gtk.Label("Task: -");
+        lbl_duration = new Gtk.Label("Duration: 00:00:00");
+        vbox.add(lbl_client);
+        vbox.add(lbl_project);
+        vbox.add(lbl_task);
+        vbox.add(lbl_duration);
 
         var hbox_buttons = new Gtk.Box(Orientation.HORIZONTAL, 6);
-        btn_start = new Gtk.Button.with_label("▶ Start"); hbox_buttons.add(btn_start);
-        btn_stop  = new Gtk.Button.with_label("■ Stop"); hbox_buttons.add(btn_stop);
+        btn_start = new Gtk.Button.with_label("▶ Start");
+        btn_stop  = new Gtk.Button.with_label("■ Stop");
+        hbox_buttons.add(btn_start);
+        hbox_buttons.add(btn_stop);
         vbox.add(hbox_buttons);
 
-        btn_new_timer = new Gtk.Button.with_label("+ New Timer"); vbox.add(btn_new_timer);
+        btn_new_timer = new Gtk.Button.with_label("+ New Timer");
+        btn_settings = new Gtk.Button.with_label("Settings");
+        vbox.add(btn_new_timer);
+        vbox.add(btn_settings);
 
         btn_start.clicked.connect(() => start_timer());
         btn_stop.clicked.connect(() => stop_timer());
@@ -90,15 +100,32 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         grid.set_column_spacing(6);
         content.add(grid);
 
-        var lbl_client = new Gtk.Label("Client:"); var combo_client = new Gtk.ComboBoxText(); combo_client.append_text("ACME Corp"); combo_client.append_text("Globex Inc");
-        var lbl_project = new Gtk.Label("Project:"); var combo_project = new Gtk.ComboBoxText(); combo_project.append_text("Website Redesign"); combo_project.append_text("Mobile App");
-        var lbl_task = new Gtk.Label("Task:"); var combo_task = new Gtk.ComboBoxText(); combo_task.append_text("Coding Applet"); combo_task.append_text("Design UI");
-        var lbl_desc = new Gtk.Label("Description:"); var entry_desc = new Gtk.Entry();
+        var lbl_client = new Gtk.Label("Client:");
+        var combo_client = new Gtk.ComboBoxText();
+        combo_client.append_text("ACME Corp");
+        combo_client.append_text("Globex Inc");
 
-        grid.attach(lbl_client, 0, 0, 1, 1); grid.attach(combo_client, 1, 0, 1, 1);
-        grid.attach(lbl_project, 0, 1, 1, 1); grid.attach(combo_project, 1, 1, 1, 1);
-        grid.attach(lbl_task, 0, 2, 1, 1); grid.attach(combo_task, 1, 2, 1, 1);
-        grid.attach(lbl_desc, 0, 3, 1, 1); grid.attach(entry_desc, 1, 3, 1, 1);
+        var lbl_project = new Gtk.Label("Project:");
+        var combo_project = new Gtk.ComboBoxText();
+        combo_project.append_text("Website Redesign");
+        combo_project.append_text("Mobile App");
+
+        var lbl_task = new Gtk.Label("Task:");
+        var combo_task = new Gtk.ComboBoxText();
+        combo_task.append_text("Coding Applet");
+        combo_task.append_text("Design UI");
+
+        var lbl_desc = new Gtk.Label("Description:");
+        var entry_desc = new Gtk.Entry();
+
+        grid.attach(lbl_client, 0, 0, 1, 1);
+        grid.attach(combo_client, 1, 0, 1, 1);
+        grid.attach(lbl_project, 0, 1, 1, 1);
+        grid.attach(combo_project, 1, 1, 1, 1);
+        grid.attach(lbl_task, 0, 2, 1, 1);
+        grid.attach(combo_task, 1, 2, 1, 1);
+        grid.attach(lbl_desc, 0, 3, 1, 1);
+        grid.attach(entry_desc, 1, 3, 1, 1);
 
         dialog.add_button("Start Timer", Gtk.ResponseType.OK);
         dialog.add_button("Cancel", Gtk.ResponseType.CANCEL);
