@@ -1,0 +1,14 @@
+Source: budgie-kimai-timetracker-applet
+Section: misc
+Priority: optional
+Maintainer: Peter Grønbæk Andersen <peter@grnbk.io>
+Build-Depends: debhelper (>= 12), meson, valac, libgtk-3-dev, budgie-core-dev, libglib2.0-dev
+Standards-Version: 4.5.0
+Homepage: https://github.com/pgroenbaek/budgie-kimai-timetracker
+Vcs-Git: https://github.com/pgroenbaek/budgie-kimai-timetracker.git
+Vcs-Browser: https://github.com/pgroenbaek/budgie-kimai-timetracker
+
+Package: budgie-kimai-timetracker-applet
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, budgie-desktop, libgtk-3-0, libc6
+Description: A Budgie applet to track time using the Kimai Timetracker

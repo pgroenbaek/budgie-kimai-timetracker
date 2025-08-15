@@ -1,0 +1,5 @@
+build/src/libkimaitimetrackerapplet.so usr/lib/budgie-desktop/plugins/kimai-timetracker
+data/kimaitimetracker.plugin usr/lib/budgie-desktop/plugins/kimai-timetracker
+data/camera-whitebalance-disabled.svg usr/share/icons/hicolor/16x16/status/
+data/camera-whitebalance-enabled.svg usr/share/icons/hicolor/16x16/status/
+data/io.grnbk.kimaitimetracker.gschema.xml usr/share/glib-2.0/schemas/

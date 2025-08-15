@@ -1,0 +1,27 @@
+[Plugin]
+Module=kimaitimetrackerapplet.so
+Name=Kimai Timetracker
+Description=Track time using the Kimai Timetracker
+Description[ca]=Fes un seguiment del temps amb el Kimai Timetracker
+Description[de_DE]=Zeiterfassung mit dem Kimai Timetracker
+Description[en_GB]=Track time using the Kimai Timetracker
+Description[es]=Registra el tiempo con Kimai Timetracker
+Description[fr]=Suivez le temps avec Kimai Timetracker
+Description[he]=עקוב אחר זמן באמצעות Kimai Timetracker
+Description[it]=Traccia il tempo con Kimai Timetracker
+Description[ja]=Kimai Timetracker を使って時間を記録
+Description[lt]=Sekite laiką naudodami Kimai Timetracker
+Description[ms_MY]=Jejak masa menggunakan Kimai Timetracker
+Description[nl_NL]=Houd tijd bij met de Kimai Timetracker
+Description[oc]=Seguissètz lo temps amb Kimai Timetracker
+Description[pl]=Śledź czas za pomocą Kimai Timetracker
+Description[pt_BR]=Controle o tempo usando o Kimai Timetracker
+Description[pt_PT]=Registe o tempo usando o Kimai Timetracker
+Description[sq]=Ndiqni kohën duke përdorur Kimai Timetracker
+Description[sr_RS]=Pratite vreme pomoću Kimai Timetracker-a
+Description[tr]=Kimai Timetracker ile zamanı takip edin
+Description[zh_CN]=使用 Kimai Timetracker 跟踪时间
+Authors=Peter Grønbæk Andersen
+Copyright=© 2025 Peter Grønbæk Andersen
+Website=https://github.com/pgroenbaek/budgie-kimai-timetracker
+Icon=camera-whitebalance-enabled
