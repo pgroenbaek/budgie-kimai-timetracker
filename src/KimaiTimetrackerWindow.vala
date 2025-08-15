@@ -1,5 +1,5 @@
 /*
- * This file is part of the Budgie Desktop Webcam Whitebalance Applet.
+ * This file is part of the Budgie Desktop Kimai Timetracker Applet.
  *
  * Copyright (C) 2025 Peter Grønbæk Andersen <peter@grnbk.io>
  *
@@ -17,7 +17,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-public class WebcamWhitebalanceWindow : Budgie.Popover {
+public class KimaiTimetrackerWindow : Budgie.Popover {
 
     private uint default_temperature = 4500;
     private uint automode_refresh_interval_ms = 15 * 60 * 1000; // 15 minutes in milliseconds
@@ -38,10 +38,10 @@ public class WebcamWhitebalanceWindow : Budgie.Popover {
 
     private unowned Settings? settings;
 
-    public WebcamWhitebalanceWindow(Gtk.Widget? c_parent, Settings? c_settings) {
+    public KimaiTimetrackerWindow(Gtk.Widget? c_parent, Settings? c_settings) {
         Object(relative_to: c_parent);
         settings = c_settings;
-        get_style_context().add_class("webcamwhitebalance-popover");
+        get_style_context().add_class("kimaitimetracker-popover");
 
         var container = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
         container.get_style_context().add_class("container");

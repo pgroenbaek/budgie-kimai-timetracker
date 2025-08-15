@@ -1,5 +1,5 @@
 /*
- * This file is part of the Budgie Desktop Webcam Whitebalance Applet.
+ * This file is part of the Budgie Desktop Kimai Timetracker Applet.
  *
  * Copyright (C) 2025 Peter Grønbæk Andersen <peter@grnbk.io>
  *
@@ -17,10 +17,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-public class WebcamWhitebalanceSettings : Gtk.Grid {
+public class KimaiTimetrackerSettings : Gtk.Grid {
     private GLib.Settings settings;
 
-    public WebcamWhitebalanceSettings(GLib.Settings settings) {
+    public KimaiTimetrackerSettings(GLib.Settings settings) {
         Object();
 
         this.settings = settings;

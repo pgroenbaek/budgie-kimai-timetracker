@@ -12,10 +12,10 @@ if not soup_dep.found()
 endif
 
 applet_kimaitimetracker_sources = [
-  'WebcamWhitebalanceApplet.vala',
-  'WebcamWhitebalanceSettings.vala',
-  'WebcamWhitebalanceWindow.vala',
-  'kimai.vala',
+  'KimaiAPI.vala',
+  'KimaiTimetrackerApplet.vala',
+  'KimaiTimetrackerSettings.vala',
+  'KimaiTimetrackerWindow.vala',
 ]
 
 applet_kimaitimetracker_deps = [

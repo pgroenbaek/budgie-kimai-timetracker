@@ -1,5 +1,5 @@
 /*
- * This file is part of the Budgie Desktop Webcam Whitebalance Applet.
+ * This file is part of the Budgie Desktop Kimai Timetracker Applet.
  *
  * Copyright (C) 2025 Peter Grønbæk Andersen <peter@grnbk.io>
  *
@@ -21,13 +21,13 @@ using Budgie;
 using Gtk;
 using GLib;
 
-public class WebcamWhitebalancePlugin : Budgie.Plugin, Peas.ExtensionBase {
+public class KimaiTimetrackerPlugin : Budgie.Plugin, Peas.ExtensionBase {
     public Budgie.Applet get_panel_widget(string uuid) {
-        return new WebcamWhitebalanceApplet(uuid);
+        return new KimaiTimetrackerApplet(uuid);
     }
 }
 
-public class WebcamWhitebalanceApplet : Budgie.Applet {
+public class KimaiTimetrackerApplet : Budgie.Applet {
     private Gtk.EventBox event_box;
     private Gtk.Image? applet_icon;
 
@@ -42,11 +42,11 @@ public class WebcamWhitebalanceApplet : Budgie.Applet {
 
     public string uuid { public set; public get; }
 
-    public WebcamWhitebalanceApplet(string uuid) {
+    public KimaiTimetrackerApplet(string uuid) {
         Object(uuid: uuid);
 
         interface_settings = new GLib.Settings("org.gnome.desktop.interface");
-        settings = new GLib.Settings("io.grnbk.webcamwhitebalance");
+        settings = new GLib.Settings("io.grnbk.kimaitimetracker");
 
         whitebalance_disabled = "camera-whitebalance-disabled";
         whitebalance_enabled = "camera-whitebalance-enabled";
@@ -56,7 +56,7 @@ public class WebcamWhitebalanceApplet : Budgie.Applet {
         applet_icon = new Gtk.Image.from_icon_name(get_current_mode_icon(), Gtk.IconSize.MENU);
         event_box.add(applet_icon);
 
-        popover = new WebcamWhitebalanceWindow(event_box, settings);
+        popover = new KimaiTimetrackerWindow(event_box, settings);
 
         settings.changed["whitebalance-enabled"].connect(() => {
             update_icon();
@@ -112,7 +112,7 @@ public class WebcamWhitebalanceApplet : Budgie.Applet {
     }
 
     public override Gtk.Widget? get_settings_ui() {
-        return new WebcamWhitebalanceSettings(this.get_applet_settings(uuid));
+        return new KimaiTimetrackerSettings(this.get_applet_settings(uuid));
     }
 }
 
@@ -120,5 +120,5 @@ public class WebcamWhitebalanceApplet : Budgie.Applet {
 public void peas_register_types(TypeModule module)
 {
     var objmodule = module as Peas.ObjectModule;
-    objmodule.register_extension_type(typeof(Budgie.Plugin), typeof(WebcamWhitebalancePlugin));
+    objmodule.register_extension_type(typeof(Budgie.Plugin), typeof(KimaiTimetrackerPlugin));
 }
