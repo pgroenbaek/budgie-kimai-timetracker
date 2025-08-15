@@ -59,6 +59,22 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox.add(main_view);
 
         this.show_all();
+
+        timer_mgr = new TimerManager();
+
+        timer_mgr.updated.connect(() => {
+            lbl_client.set_text("Client: " + timer_mgr.client);
+            lbl_project.set_text("Project: " + timer_mgr.project);
+            lbl_task.set_text("Task: " + timer_mgr.task);
+            int h = timer_mgr.elapsed_seconds / 3600;
+            int m = (timer_mgr.elapsed_seconds % 3600) / 60;
+            int s = timer_mgr.elapsed_seconds % 60;
+            lbl_duration.set_text("Duration: %02d:%02d:%02d".printf(h, m, s));
+        });
+
+        timer_mgr.stopped.connect(() => {
+            lbl_duration.set_text("Duration: 00:00:00");
+        });
     }
 
     private Gtk.Box build_main_view() {
@@ -87,8 +103,8 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox_bottom.add(btn_settings);
         box.add(vbox_bottom);
 
-        btn_start.clicked.connect(() => start_timer());
-        btn_stop.clicked.connect(() => stop_timer());
+        btn_start.clicked.connect(() => timer_mgr.start_timer(timer_mgr.client, timer_mgr.project, timer_mgr.task, ""));
+        btn_stop.clicked.connect(() => timer_mgr.stop_timer());
         btn_new_timer.clicked.connect(() => switch_to_form());
 
         return box;
