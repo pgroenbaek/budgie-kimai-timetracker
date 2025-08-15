@@ -38,10 +38,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Box main_view;
     private Gtk.Box form_view;
 
-    private uint timer_id = 0;
-    private int elapsed_seconds = 0;
+    private KimaiTimerManager timer_mgr;
 
-    public KimaiTimetrackerWindow(Gtk.Widget? parent, Settings? c_settings) {
+    public KimaiTimetrackerWindow(Gtk.Widget? parent, Settings? c_settings, KimaiAPI api) {
         Object(relative_to: parent);
         settings = c_settings;
 
@@ -55,12 +54,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         main_view = build_main_view();
         form_view = build_form_view();
-
         vbox.add(main_view);
 
-        this.show_all();
-
-        timer_mgr = new TimerManager();
+        timer_mgr = new KimaiTimerManager(api);
 
         timer_mgr.updated.connect(() => {
             lbl_client.set_text("Client: " + timer_mgr.client);
@@ -75,6 +71,8 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         timer_mgr.stopped.connect(() => {
             lbl_duration.set_text("Duration: 00:00:00");
         });
+
+        this.show_all();
     }
 
     private Gtk.Box build_main_view() {
@@ -103,7 +101,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox_bottom.add(btn_settings);
         box.add(vbox_bottom);
 
-        btn_start.clicked.connect(() => timer_mgr.start_timer(timer_mgr.client, timer_mgr.project, timer_mgr.task, ""));
+        btn_start.clicked.connect(() => {
+            var desc = entry_desc?.get_text() ?? "";
+            timer_mgr.start_timer(
+                combo_project.get_active() >= 0 ? combo_project.get_active() : 0,
+                combo_task.get_active() >= 0 ? combo_task.get_active() : 0,
+                desc
+            );
+        });
+
         btn_stop.clicked.connect(() => timer_mgr.stop_timer());
         btn_new_timer.clicked.connect(() => switch_to_form());
 
@@ -158,14 +164,14 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.add(vbox_bottom);
 
         btn_back.clicked.connect(() => switch_to_main());
+
         btn_start_new.clicked.connect(() => {
-            lbl_client.set_text("Client: " + combo_client.get_active_text());
-            lbl_project.set_text("Project: " + combo_project.get_active_text());
-            lbl_task.set_text("Task: " + combo_task.get_active_text());
-            elapsed_seconds = 0;
-            lbl_duration.set_text("Duration: 00:00:00");
             switch_to_main();
-            start_timer();
+            timer_mgr.start_timer(
+                combo_project.get_active() >= 0 ? combo_project.get_active() : 0,
+                combo_task.get_active() >= 0 ? combo_task.get_active() : 0,
+                entry_desc.get_text()
+            );
         });
 
         return box;
@@ -183,25 +189,5 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         parent.remove(form_view);
         parent.add(main_view);
         this.show_all();
-    }
-
-    private void start_timer() {
-        if (timer_id == 0) {
-            timer_id = GLib.Timeout.add_seconds(1, () => {
-                elapsed_seconds++;
-                int h = elapsed_seconds / 3600;
-                int m = (elapsed_seconds % 3600) / 60;
-                int s = elapsed_seconds % 60;
-                lbl_duration.set_text("Duration: %02d:%02d:%02d".printf(h, m, s));
-                return true;
-            });
-        }
-    }
-
-    private void stop_timer() {
-        if (timer_id != 0) {
-            GLib.Source.remove(timer_id);
-            timer_id = 0;
-        }
     }
 }
