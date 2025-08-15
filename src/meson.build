@@ -12,7 +12,7 @@ if not soup_dep.found()
 endif
 
 applet_kimaitimetracker_sources = [
-  'KimaiAPI.vala',
+  #'KimaiAPI.vala',
   'KimaiTimetrackerApplet.vala',
   'KimaiTimetrackerSettings.vala',
   'KimaiTimetrackerWindow.vala',

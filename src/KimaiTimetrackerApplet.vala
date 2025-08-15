@@ -34,72 +34,36 @@ public class KimaiTimetrackerApplet : Budgie.Applet {
     private Budgie.Popover? popover = null;
     private unowned Budgie.PopoverManager? manager = null;
 
-    private GLib.Settings? interface_settings;
     private GLib.Settings? settings;
-
-    private string? whitebalance_disabled;
-    private string? whitebalance_enabled;
 
     public string uuid { public set; public get; }
 
     public KimaiTimetrackerApplet(string uuid) {
         Object(uuid: uuid);
 
-        interface_settings = new GLib.Settings("org.gnome.desktop.interface");
         settings = new GLib.Settings("io.grnbk.kimaitimetracker");
-
-        whitebalance_disabled = "camera-whitebalance-disabled";
-        whitebalance_enabled = "camera-whitebalance-enabled";
 
         event_box = new Gtk.EventBox();
         this.add(event_box);
-        applet_icon = new Gtk.Image.from_icon_name(get_current_mode_icon(), Gtk.IconSize.MENU);
+        applet_icon = new Gtk.Image.from_icon_name("appointment-new", Gtk.IconSize.MENU);
         event_box.add(applet_icon);
 
         popover = new KimaiTimetrackerWindow(event_box, settings);
 
-        settings.changed["whitebalance-enabled"].connect(() => {
-            update_icon();
-        });
-
         event_box.button_press_event.connect((e) => {
-            switch (e.button) {
-            case 1:
+            if (e.button == 1) {
                 if (popover.get_visible()) {
                     popover.hide();
                 } else {
                     popover.show_all();
                     this.manager.show_popover(event_box);
                 }
-                break;
-            case 2:
-                toggle_enabled();
-                break;
-            default:
-                return Gdk.EVENT_PROPAGATE;
+                return Gdk.EVENT_STOP;
             }
-
-            return Gdk.EVENT_STOP;
+            return Gdk.EVENT_PROPAGATE;
         });
 
         this.show_all();
-    }
-
-    private string get_current_mode_icon() {
-        bool enabled = settings.get_boolean("whitebalance-enabled");
-        string state_icon = (enabled) ? whitebalance_enabled : whitebalance_disabled;
-        return state_icon;
-    }
-
-    private void toggle_enabled() {
-        bool enabled = settings.get_boolean("whitebalance-enabled");
-        settings.set_boolean("whitebalance-enabled", !enabled);
-    }
-
-    private void update_icon() {
-        if (applet_icon != null) {
-            applet_icon.set_from_icon_name(get_current_mode_icon(), Gtk.IconSize.MENU);
-        }
     }
 
     public override void update_popovers(Budgie.PopoverManager? manager) {
@@ -112,13 +76,12 @@ public class KimaiTimetrackerApplet : Budgie.Applet {
     }
 
     public override Gtk.Widget? get_settings_ui() {
-        return new KimaiTimetrackerSettings(this.get_applet_settings(uuid));
+        return new Label("No settings yet");
     }
 }
 
 [ModuleInit]
-public void peas_register_types(TypeModule module)
-{
+public void peas_register_types(TypeModule module) {
     var objmodule = module as Peas.ObjectModule;
     objmodule.register_extension_type(typeof(Budgie.Plugin), typeof(KimaiTimetrackerPlugin));
 }

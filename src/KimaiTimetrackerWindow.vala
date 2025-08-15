@@ -18,234 +18,100 @@
  */
 
 public class KimaiTimetrackerWindow : Budgie.Popover {
-
-    private uint default_temperature = 4500;
-    private uint automode_refresh_interval_ms = 15 * 60 * 1000; // 15 minutes in milliseconds
-
-    private Gtk.Switch? enabled_switch = null;
-    private Gtk.Switch? mode_switch = null;
-    private Gtk.Label? mode_label = null;
-    private Gtk.SpinButton? absolute_temperature_spinbutton = null;
-    private Gtk.Label? absolute_temperature_label = null;
-    private Gtk.SpinButton? relative_temperature_spinbutton = null;
-    private Gtk.Label? relative_temperature_label = null;
-    private ulong enabled_id;
-    private ulong mode_id;
-    private ulong absolute_temperature_id;
-    private ulong relative_temperature_id;
-
-    private uint last_autodetect_temperature = 4500;
-
     private unowned Settings? settings;
 
-    public KimaiTimetrackerWindow(Gtk.Widget? c_parent, Settings? c_settings) {
-        Object(relative_to: c_parent);
+    private Gtk.Label lbl_client;
+    private Gtk.Label lbl_project;
+    private Gtk.Label lbl_task;
+    private Gtk.Label lbl_duration;
+
+    private Gtk.Button btn_start;
+    private Gtk.Button btn_stop;
+    private Gtk.Button btn_new_timer;
+
+    private uint timer_id = 0;
+    private int elapsed_seconds = 0;
+
+    public KimaiTimetrackerWindow(Gtk.Widget? parent, Settings? c_settings) {
+        Object(relative_to: parent);
         settings = c_settings;
-        get_style_context().add_class("kimaitimetracker-popover");
 
-        var container = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
-        container.get_style_context().add_class("container");
+        var vbox = new Gtk.Box(Orientation.VERTICAL, 6);
+        vbox.set_margin_top(6);
+        vbox.set_margin_bottom(6);
+        vbox.set_margin_start(6);
+        vbox.set_margin_end(6);
+        add(vbox);
 
-        Gtk.Grid grid = new Gtk.Grid();
-        grid.set_row_spacing(6);
-        grid.set_column_spacing(12);
+        lbl_client = new Gtk.Label("Client: -"); vbox.add(lbl_client);
+        lbl_project = new Gtk.Label("Project: -"); vbox.add(lbl_project);
+        lbl_task = new Gtk.Label("Task: -"); vbox.add(lbl_task);
+        lbl_duration = new Gtk.Label("Duration: 00:00:00"); vbox.add(lbl_duration);
 
-        Gtk.Label enabled_label = new Gtk.Label(_("Enable Control"));
-        enabled_label.set_halign(Gtk.Align.START);
-        mode_label = new Gtk.Label(_("Auto White Balance"));
-        mode_label.set_halign(Gtk.Align.START);
-        absolute_temperature_label = new Gtk.Label(_("Temperature (K)"));
-        absolute_temperature_label.set_halign(Gtk.Align.START);
-        relative_temperature_label = new Gtk.Label(_("Temperature +/- (K)"));
-        relative_temperature_label.set_halign(Gtk.Align.START);
+        var hbox_buttons = new Gtk.Box(Orientation.HORIZONTAL, 6);
+        btn_start = new Gtk.Button.with_label("▶ Start"); hbox_buttons.add(btn_start);
+        btn_stop  = new Gtk.Button.with_label("■ Stop"); hbox_buttons.add(btn_stop);
+        vbox.add(hbox_buttons);
 
-        enabled_switch = new Gtk.Switch();
-        enabled_switch.set_halign(Gtk.Align.END);
-        mode_switch = new Gtk.Switch();
-        mode_switch.set_halign(Gtk.Align.END);
-        var absolute_adjustment = new Gtk.Adjustment(default_temperature, 1000, 10000, 100, 500, 0);
-        absolute_temperature_spinbutton = new Gtk.SpinButton(absolute_adjustment, 0, 0);
-        absolute_temperature_spinbutton.set_halign(Gtk.Align.END);
-        var relative_adjustment = new Gtk.Adjustment(0, -2000, 2000, 100, 500, 0);
-        relative_temperature_spinbutton = new Gtk.SpinButton(relative_adjustment, 0, 0);
-        relative_temperature_spinbutton.set_halign(Gtk.Align.END);
+        btn_new_timer = new Gtk.Button.with_label("+ New Timer"); vbox.add(btn_new_timer);
 
-        grid.attach(enabled_label, 0, 0);
-        grid.attach(enabled_switch, 1, 0);
-        grid.attach(mode_label, 0, 1);
-        grid.attach(mode_switch, 1, 1);
-        grid.attach(absolute_temperature_label, 0, 2);
-        grid.attach(absolute_temperature_spinbutton, 1, 2);
-        grid.attach(relative_temperature_label, 0, 3);
-        grid.attach(relative_temperature_spinbutton, 1, 3);
+        btn_start.clicked.connect(() => start_timer());
+        btn_stop.clicked.connect(() => stop_timer());
+        btn_new_timer.clicked.connect(() => show_new_timer_dialog());
 
-        container.add(grid);
-        add(container);
-
-        this.show.connect(() => {
-            update_ux_state();
-        });
-
-        update_ux_state();
-
-        settings.changed["whitebalance-enabled"].connect(() => {
-            update_ux_state();
-        });
-
-        settings.changed["whitebalance-auto"].connect(() => {
-            update_ux_state();
-        });
-
-        enabled_id = enabled_switch.notify["active"].connect(() => {
-            SignalHandler.block(enabled_switch, enabled_id);
-            settings.set_boolean("whitebalance-enabled", enabled_switch.active);
-            update_ux_state();
-            SignalHandler.unblock(enabled_switch, enabled_id);
-        });
-
-        mode_id = mode_switch.notify["active"].connect(() => {
-            SignalHandler.block(mode_switch, mode_id);
-            settings.set_boolean("whitebalance-auto", mode_switch.active);
-            update_ux_state();
-            SignalHandler.unblock(mode_switch, mode_id);
-        });
-
-        settings.changed["whitebalance-temperature"].connect(() => {
-            SignalHandler.block(absolute_temperature_spinbutton, absolute_temperature_id);
-            update_ux_state();
-            SignalHandler.unblock(absolute_temperature_spinbutton, absolute_temperature_id);
-        });
-
-        settings.changed["whitebalance-relative"].connect(() => {
-            SignalHandler.block(relative_temperature_spinbutton, relative_temperature_id);
-            update_ux_state();
-            SignalHandler.unblock(relative_temperature_spinbutton, relative_temperature_id);
-        });
-
-        absolute_temperature_id = absolute_temperature_spinbutton.value_changed.connect(update_absolute_temperature_value);
-        relative_temperature_id = relative_temperature_spinbutton.value_changed.connect(update_relative_temperature_value);
-
-        GLib.Timeout.add(automode_refresh_interval_ms, () => {
-            update_automode_temperature();
-            return true;
-        });
-
-        update_automode_temperature();
+        this.show_all();
     }
 
-    public void update_ux_state() {
-        enabled_switch.active = settings.get_boolean("whitebalance-enabled");
-        mode_switch.active = settings.get_boolean("whitebalance-auto");
-        absolute_temperature_spinbutton.value = settings.get_int("whitebalance-temperature");
-        relative_temperature_spinbutton.value = settings.get_int("whitebalance-relative");
-
-        bool enabled = enabled_switch.active;
-        bool auto_mode = mode_switch.active;
-
-        if (!enabled) {
-            mode_switch.set_sensitive(false);
-            mode_label.set_sensitive(false);
-            absolute_temperature_spinbutton.set_sensitive(false);
-            absolute_temperature_label.set_sensitive(false);
-            relative_temperature_spinbutton.set_sensitive(false);
-            relative_temperature_label.set_sensitive(false);
-            toggle_webcam_automatic(true);
-        } else {
-            mode_switch.set_sensitive(true);
-            mode_label.set_sensitive(true);
-            absolute_temperature_spinbutton.set_sensitive(true);
-            absolute_temperature_label.set_sensitive(true);
-            relative_temperature_spinbutton.set_sensitive(true);
-            relative_temperature_label.set_sensitive(true);
-            toggle_webcam_automatic(false);
-        }
-
-        if (auto_mode) {
-            absolute_temperature_spinbutton.set_visible(false);
-            absolute_temperature_label.set_visible(false);
-            relative_temperature_spinbutton.set_visible(true);
-            relative_temperature_label.set_visible(true);
-        } else {
-            absolute_temperature_spinbutton.set_visible(true);
-            absolute_temperature_label.set_visible(true);
-            relative_temperature_spinbutton.set_visible(false);
-            relative_temperature_label.set_visible(false);
-        }
-    }
-
-    public void update_absolute_temperature_value() {
-        var absolute_temperature = absolute_temperature_spinbutton.get_value_as_int();
-        settings.set_int("whitebalance-temperature", absolute_temperature);
-
-        bool enabled = enabled_switch.active;
-
-        if (enabled) {
-            apply_temperature(absolute_temperature);
-        }
-    }
-
-    public void update_relative_temperature_value() {
-        var relative_temperature = relative_temperature_spinbutton.get_value_as_int();
-        settings.set_int("whitebalance-relative", relative_temperature);
-
-        bool enabled = enabled_switch.active;
-        bool auto_mode = mode_switch.active;
-
-        if (enabled && auto_mode) {
-            apply_temperature(last_autodetect_temperature + relative_temperature);
-        }
-    }
-
-    private void update_automode_temperature() {
-        bool enabled = enabled_switch.active;
-        bool auto_mode = mode_switch.active;
-
-        if (enabled && auto_mode) {
-            toggle_webcam_automatic(true);
-            GLib.Timeout.add(600, () => {
-                last_autodetect_temperature = get_current_temperature();
-                toggle_webcam_automatic(false);
-                return false;
+    private void start_timer() {
+        if (timer_id == 0) {
+            timer_id = GLib.Timeout.add_seconds(1, () => {
+                elapsed_seconds++;
+                int h = elapsed_seconds / 3600;
+                int m = (elapsed_seconds % 3600) / 60;
+                int s = elapsed_seconds % 60;
+                lbl_duration.text = "Duration: %02d:%02d:%02d".printf(h, m, s);
+                return true;
             });
         }
     }
 
-    private void toggle_webcam_automatic(bool webcam_automatic) {
-        string command = "v4l2-ctl --set-ctrl=white_balance_temperature=" + (webcam_automatic ? "1" : "0");
-        try {
-            Process.spawn_command_line_async(command);
-        } catch (Error e) {
-            stderr.printf("Error setting webcam mode: %s\n", e.message);
+    private void stop_timer() {
+        if (timer_id != 0) {
+            GLib.Source.remove(timer_id);
+            timer_id = 0;
         }
     }
 
-    private void apply_temperature(uint new_temperature) {
-        string command = "v4l2-ctl --set-ctrl=white_balance_temperature=" + new_temperature.to_string();
-        try {
-            Process.spawn_command_line_async(command);
-        } catch (Error e) {
-            stderr.printf("Error setting webcam temperature: %s\n", e.message);
+    private void show_new_timer_dialog() {
+        var dialog = new Gtk.Dialog("New Timer", this, Gtk.DialogFlags.MODAL);
+        var content = dialog.get_content_area();
+        var grid = new Gtk.Grid();
+        grid.set_row_spacing(6);
+        grid.set_column_spacing(6);
+        content.add(grid);
+
+        var lbl_client = new Gtk.Label("Client:"); var combo_client = new Gtk.ComboBoxText(); combo_client.append_text("ACME Corp"); combo_client.append_text("Globex Inc");
+        var lbl_project = new Gtk.Label("Project:"); var combo_project = new Gtk.ComboBoxText(); combo_project.append_text("Website Redesign"); combo_project.append_text("Mobile App");
+        var lbl_task = new Gtk.Label("Task:"); var combo_task = new Gtk.ComboBoxText(); combo_task.append_text("Coding Applet"); combo_task.append_text("Design UI");
+        var lbl_desc = new Gtk.Label("Description:"); var entry_desc = new Gtk.Entry();
+
+        grid.attach(lbl_client, 0, 0, 1, 1); grid.attach(combo_client, 1, 0, 1, 1);
+        grid.attach(lbl_project, 0, 1, 1, 1); grid.attach(combo_project, 1, 1, 1, 1);
+        grid.attach(lbl_task, 0, 2, 1, 1); grid.attach(combo_task, 1, 2, 1, 1);
+        grid.attach(lbl_desc, 0, 3, 1, 1); grid.attach(entry_desc, 1, 3, 1, 1);
+
+        dialog.add_button("Start Timer", Gtk.ResponseType.OK);
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL);
+
+        dialog.show_all();
+        if (dialog.run() == Gtk.ResponseType.OK) {
+            lbl_client.text = "Client: " + combo_client.get_active_text();
+            lbl_project.text = "Project: " + combo_project.get_active_text();
+            lbl_task.text = "Task: " + combo_task.get_active_text();
+            elapsed_seconds = 0;
+            lbl_duration.text = "Duration: 00:00:00";
+            start_timer();
         }
-    }
-
-    private uint get_current_temperature() {
-        try {
-            string output;
-            Process.spawn_command_line_sync("v4l2-ctl --get-ctrl=white_balance_temperature", out output, null, null);
-            
-            var regex = new GLib.Regex("white_balance_temperature: (\\d+)", 0);
-
-            MatchInfo match_info = null;
-            var match = regex.match(output.strip(), 0, out match_info);
-
-            if (match) {
-                return uint.parse(match_info.fetch(1));
-            } else {
-                return default_temperature;
-            }
-        } catch (Error e) {
-            stderr.printf("Error getting webcam temperature: %s\n", e.message);
-            return default_temperature;
-        }
+        dialog.destroy();
     }
 }

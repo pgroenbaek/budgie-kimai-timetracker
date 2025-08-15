@@ -27,9 +27,8 @@ public class KimaiAPI : Object {
     private string auth_header;
 
     public KimaiAPI(string base_url, string username, string api_token) {
-        // Ensure no trailing slash in base_url
-        if (base_url.has_suffix ("/")) {
-            this.base_url = base_url.chomp ();
+        if (base_url.has_suffix("/")) {
+            this.base_url = base_url.chomp();
         } else {
             this.base_url = base_url;
         }
@@ -53,7 +52,6 @@ public class KimaiAPI : Object {
         return (string) message.get_body().data;
     }
 
-    // List active timesheets, parsed into a Json.Array
     public Json.Array list_active_timesheets() throws Error {
         string json_str = request("GET", "/timesheets?active=1");
 
@@ -68,7 +66,6 @@ public class KimaiAPI : Object {
         return root.get_array();
     }
 
-    // Start a timer
     public Json.Node start_timer(int project_id, int activity_id, string description) throws Error {
         var json_body = @"{
             ""project"": %d,
@@ -82,7 +79,6 @@ public class KimaiAPI : Object {
         return parser.get_root();
     }
 
-    // Stop a timer (pass the ID of the timesheet)
     public Json.Node stop_timer(int timesheet_id) throws Error {
         var json_body = @"{
             ""end"": ""now""
