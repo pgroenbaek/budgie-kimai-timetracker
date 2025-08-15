@@ -30,6 +30,14 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Button btn_new_timer;
     private Gtk.Button btn_settings;
 
+    private Gtk.ComboBoxText combo_client;
+    private Gtk.ComboBoxText combo_project;
+    private Gtk.ComboBoxText combo_task;
+    private Gtk.Entry entry_desc;
+
+    private Gtk.Box main_view;
+    private Gtk.Box form_view;
+
     private uint timer_id = 0;
     private int elapsed_seconds = 0;
 
@@ -42,33 +50,122 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox.set_margin_bottom(6);
         vbox.set_margin_start(6);
         vbox.set_margin_end(6);
+        vbox.set_size_request(300, -1);
         add(vbox);
+
+        main_view = build_main_view();
+        form_view = build_form_view();
+
+        vbox.add(main_view);
+
+        this.show_all();
+    }
+
+    private Gtk.Box build_main_view() {
+        var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
 
         lbl_client = new Gtk.Label("Client: -");
         lbl_project = new Gtk.Label("Project: -");
         lbl_task = new Gtk.Label("Task: -");
         lbl_duration = new Gtk.Label("Duration: 00:00:00");
-        vbox.add(lbl_client);
-        vbox.add(lbl_project);
-        vbox.add(lbl_task);
-        vbox.add(lbl_duration);
+        box.add(lbl_client);
+        box.add(lbl_project);
+        box.add(lbl_task);
+        box.add(lbl_duration);
 
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
         btn_start = new Gtk.Button.with_label("▶ Start");
         btn_stop  = new Gtk.Button.with_label("■ Stop");
         hbox_buttons.add(btn_start);
         hbox_buttons.add(btn_stop);
-        vbox.add(hbox_buttons);
+        box.add(hbox_buttons);
 
+        var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
         btn_new_timer = new Gtk.Button.with_label("+ New Timer");
         btn_settings = new Gtk.Button.with_label("Settings");
-        vbox.add(btn_new_timer);
-        vbox.add(btn_settings);
+        vbox_bottom.add(btn_new_timer);
+        vbox_bottom.add(btn_settings);
+        box.add(vbox_bottom);
 
         btn_start.clicked.connect(() => start_timer());
         btn_stop.clicked.connect(() => stop_timer());
-        btn_new_timer.clicked.connect(() => show_new_timer_dialog());
+        btn_new_timer.clicked.connect(() => switch_to_form());
 
+        return box;
+    }
+
+    private Gtk.Box build_form_view() {
+        var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
+
+        var grid = new Gtk.Grid();
+        grid.set_row_spacing(6);
+        grid.set_column_spacing(6);
+
+        var lbl_c = new Gtk.Label("Client:");
+        lbl_c.set_halign(Gtk.Align.START);
+        combo_client = new Gtk.ComboBoxText();
+        combo_client.append_text("ACME Corp");
+        combo_client.append_text("Globex Inc");
+
+        var lbl_p = new Gtk.Label("Project:");
+        lbl_p.set_halign(Gtk.Align.START);
+        combo_project = new Gtk.ComboBoxText();
+        combo_project.append_text("Website Redesign");
+        combo_project.append_text("Mobile App");
+
+        var lbl_t = new Gtk.Label("Task:");
+        lbl_t.set_halign(Gtk.Align.START);
+        combo_task = new Gtk.ComboBoxText();
+        combo_task.append_text("Coding Applet");
+        combo_task.append_text("Design UI");
+
+        var lbl_d = new Gtk.Label("Description:");
+        lbl_d.set_halign(Gtk.Align.START);
+        entry_desc = new Gtk.Entry();
+
+        grid.attach(lbl_c, 0, 0, 1, 1);
+        grid.attach(combo_client, 1, 0, 1, 1);
+        grid.attach(lbl_p, 0, 1, 1, 1);
+        grid.attach(combo_project, 1, 1, 1, 1);
+        grid.attach(lbl_t, 0, 2, 1, 1);
+        grid.attach(combo_task, 1, 2, 1, 1);
+        grid.attach(lbl_d, 0, 3, 1, 1);
+        grid.attach(entry_desc, 1, 3, 1, 1);
+
+        box.add(grid);
+
+        var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
+        var btn_start_new = new Gtk.Button.with_label("Start Timer");
+        var btn_back = new Gtk.Button.with_label("Back");
+        vbox_bottom.add(btn_start_new);
+        vbox_bottom.add(btn_back);
+        box.add(vbox_bottom);
+
+        btn_back.clicked.connect(() => switch_to_main());
+        btn_start_new.clicked.connect(() => {
+            lbl_client.set_text("Client: " + combo_client.get_active_text());
+            lbl_project.set_text("Project: " + combo_project.get_active_text());
+            lbl_task.set_text("Task: " + combo_task.get_active_text());
+            elapsed_seconds = 0;
+            lbl_duration.set_text("Duration: 00:00:00");
+            switch_to_main();
+            start_timer();
+        });
+
+        return box;
+    }
+
+    private void switch_to_form() {
+        var parent = (Gtk.Box) main_view.get_parent();
+        parent.remove(main_view);
+        parent.add(form_view);
+        this.show_all();
+    }
+
+    private void switch_to_main() {
+        var parent = (Gtk.Box) form_view.get_parent();
+        parent.remove(form_view);
+        parent.add(main_view);
         this.show_all();
     }
 
@@ -91,69 +188,4 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             timer_id = 0;
         }
     }
-
-    private void show_new_timer_dialog() {
-        var dialog = new Gtk.Dialog.with_buttons(
-            "New Timer",
-            (Gtk.Window) this.get_toplevel(),
-            Gtk.DialogFlags.MODAL,
-            "Start Timer", Gtk.ResponseType.OK,
-            "Cancel", Gtk.ResponseType.CANCEL
-        );
-
-        var content = dialog.get_content_area();
-        var grid = new Gtk.Grid();
-        grid.set_row_spacing(6);
-        grid.set_column_spacing(6);
-        grid.set_margin_top(6);
-        grid.set_margin_bottom(6);
-        grid.set_margin_start(6);
-        grid.set_margin_end(6);
-        content.add(grid);
-
-        // Local variables renamed to avoid shadowing class members
-        var dlg_lbl_client = new Gtk.Label("Client:");
-        dlg_lbl_client.set_halign(Gtk.Align.START);
-        var combo_client = new Gtk.ComboBoxText();
-        combo_client.append_text("ACME Corp");
-        combo_client.append_text("Globex Inc");
-
-        var dlg_lbl_project = new Gtk.Label("Project:");
-        dlg_lbl_project.set_halign(Gtk.Align.START);
-        var combo_project = new Gtk.ComboBoxText();
-        combo_project.append_text("Website Redesign");
-        combo_project.append_text("Mobile App");
-
-        var dlg_lbl_task = new Gtk.Label("Task:");
-        dlg_lbl_task.set_halign(Gtk.Align.START);
-        var combo_task = new Gtk.ComboBoxText();
-        combo_task.append_text("Coding Applet");
-        combo_task.append_text("Design UI");
-
-        var dlg_lbl_desc = new Gtk.Label("Description:");
-        dlg_lbl_desc.set_halign(Gtk.Align.START);
-        var entry_desc = new Gtk.Entry();
-
-        grid.attach(dlg_lbl_client, 0, 0, 1, 1);
-        grid.attach(combo_client, 1, 0, 1, 1);
-        grid.attach(dlg_lbl_project, 0, 1, 1, 1);
-        grid.attach(combo_project, 1, 1, 1, 1);
-        grid.attach(dlg_lbl_task, 0, 2, 1, 1);
-        grid.attach(combo_task, 1, 2, 1, 1);
-        grid.attach(dlg_lbl_desc, 0, 3, 1, 1);
-        grid.attach(entry_desc, 1, 3, 1, 1);
-
-        dialog.show_all();
-        if (dialog.run() == Gtk.ResponseType.OK) {
-            lbl_client.set_text("Client: " + (combo_client.get_active_text() ?? "-"));
-            lbl_project.set_text("Project: " + (combo_project.get_active_text() ?? "-"));
-            lbl_task.set_text("Task: " + (combo_task.get_active_text() ?? "-"));
-            elapsed_seconds = 0;
-            lbl_duration.set_text("Duration: 00:00:00");
-            start_timer();
-        }
-
-        dialog.destroy();
-    }
-
 }
