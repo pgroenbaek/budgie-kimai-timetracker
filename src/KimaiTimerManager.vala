@@ -38,6 +38,9 @@ public class KimaiTimerManager : GLib.Object {
     public string task {
         get { return active_timesheet != null ? active_timesheet.activity.name : "-"; }
     }
+    public string description {
+        get { return active_timesheet != null ? active_timesheet.description : "-"; }
+    }
 
     public KimaiTimerManager(KimaiAPI api) {
         this.api = api;

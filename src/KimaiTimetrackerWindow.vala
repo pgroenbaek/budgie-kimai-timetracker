@@ -35,20 +35,21 @@ using Budgie;
 //                                          "api-token", "kimai", null);
 
 public class KimaiTimetrackerWindow : Budgie.Popover {
-    private Gtk.Label lbl_client;
-    private Gtk.Label lbl_project;
-    private Gtk.Label lbl_task;
-    private Gtk.Label lbl_duration;
+    private Gtk.Label label_customer_content;
+    private Gtk.Label label_project_content;
+    private Gtk.Label label_task_content;
+    private Gtk.Label label_description_content;
+    private Gtk.Label label_duration_content;
 
-    private Gtk.Button btn_start;
-    private Gtk.Button btn_stop;
-    private Gtk.Button btn_new_timer;
-    private Gtk.Button btn_settings;
+    private Gtk.Button button_start;
+    private Gtk.Button button_stop;
+    private Gtk.Button button_new_timer;
+    private Gtk.Button button_settings;
 
-    private Gtk.ComboBoxText combo_client;
+    private Gtk.ComboBoxText combo_costumer;
     private Gtk.ComboBoxText combo_project;
     private Gtk.ComboBoxText combo_task;
-    private Gtk.Entry entry_desc;
+    private Gtk.Entry entry_description;
 
     private Gtk.Box main_view;
     private Gtk.Box form_view;
@@ -57,7 +58,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Box form_warning_box;
 
     private KimaiAPI api;
-    private KimaiTimerManager timer_mgr;
+    private KimaiTimerManager timer_manager;
 
     private unowned GLib.Settings? settings;
 
@@ -66,8 +67,8 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         settings = c_settings;
         get_style_context().add_class("kimaitimetracker-popover");
 
-        api = new KimaiAPI("https://demo.kimai.org/api", "");
-        timer_mgr = new KimaiTimerManager(api);
+        api = new KimaiAPI("https://demo.kimai.org/api", "8e981f387f8d7a1931790cc26");
+        timer_manager = new KimaiTimerManager(api);
 
         var vbox = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
         vbox.set_margin_top(6);
@@ -81,9 +82,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         form_view = build_form_view();
         vbox.add(main_view);
 
-        timer_mgr.updated.connect(update_labels);
-        timer_mgr.stopped.connect(() => lbl_duration.set_text("Duration: -"));
-        timer_mgr.refresh_from_server();
+        timer_manager.updated.connect(update_labels);
+        timer_manager.stopped.connect(() => label_duration_content.set_text("-"));
+        timer_manager.refresh_from_server();
 
         this.show_all();
     }
@@ -132,35 +133,63 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         main_warning_box = build_warning_box();
         box.pack_start(main_warning_box, false, false, 0);
 
-        lbl_client = new Gtk.Label("Customer: -");
-        lbl_project = new Gtk.Label("Project: -");
-        lbl_task = new Gtk.Label("Task: -");
-        lbl_duration = new Gtk.Label("Duration: -");
-        box.add(lbl_client);
-        box.add(lbl_project);
-        box.add(lbl_task);
-        box.add(lbl_duration);
+        var label_customer = new Gtk.Label("Customer:");
+        label_customer.set_halign(Gtk.Align.END);
+        var label_project = new Gtk.Label("Project:");
+        label_project.set_halign(Gtk.Align.END);
+        var label_task = new Gtk.Label("Task:");
+        label_task.set_halign(Gtk.Align.END);
+        var label_duration = new Gtk.Label("Duration:");
+        label_duration.set_halign(Gtk.Align.END);
+        var label_description = new Gtk.Label("Description:");
+        label_description.set_halign(Gtk.Align.END);
+
+        label_customer_content = new Gtk.Label("-");
+        label_customer_content.set_halign(Gtk.Align.START);
+        label_project_content = new Gtk.Label("-");
+        label_project_content.set_halign(Gtk.Align.START);
+        label_task_content = new Gtk.Label("-");
+        label_task_content.set_halign(Gtk.Align.START);
+        label_description_content = new Gtk.Label("-");
+        label_description_content.set_halign(Gtk.Align.START);
+        label_duration_content = new Gtk.Label("-");
+        label_duration_content.set_halign(Gtk.Align.START);
+
+        var grid = new Gtk.Grid();
+        grid.set_row_spacing(6);
+        grid.set_column_spacing(6);
+        grid.attach(label_customer, 0, 0, 1, 1);
+        grid.attach(label_customer_content, 1, 0, 1, 1);
+        grid.attach(label_project, 0, 1, 1, 1);
+        grid.attach(label_project_content, 1, 1, 1, 1);
+        grid.attach(label_task, 0, 2, 1, 1);
+        grid.attach(label_task_content, 1, 2, 1, 1);
+        grid.attach(label_description, 0, 3, 1, 1);
+        grid.attach(label_description_content, 1, 3, 1, 1);
+        grid.attach(label_duration, 0, 4, 1, 1);
+        grid.attach(label_duration_content, 1, 4, 1, 1);
+        box.add(grid);
 
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-        btn_start = new Gtk.Button.with_label("▶ Start");
-        btn_stop  = new Gtk.Button.with_label("■ Stop");
-        hbox_buttons.add(btn_start);
-        hbox_buttons.add(btn_stop);
+        button_start = new Gtk.Button.with_label("▶ Start");
+        button_stop  = new Gtk.Button.with_label("■ Stop");
+        hbox_buttons.add(button_start);
+        hbox_buttons.add(button_stop);
         box.add(hbox_buttons);
 
         var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
-        btn_new_timer = new Gtk.Button.with_label("+ New Timer");
-        btn_settings = new Gtk.Button.with_label("Settings");
-        vbox_bottom.add(btn_new_timer);
-        vbox_bottom.add(btn_settings);
+        button_new_timer = new Gtk.Button.with_label("+ New Timer");
+        button_settings = new Gtk.Button.with_label("Settings");
+        vbox_bottom.add(button_new_timer);
+        vbox_bottom.add(button_settings);
         box.add(vbox_bottom);
 
-        btn_start.clicked.connect(() => {
-            if (timer_mgr.active_timesheet == null) switch_to_form();
-            else timer_mgr.refresh_from_server();
+        button_start.clicked.connect(() => {
+            if (timer_manager.active_timesheet == null) switch_to_form();
+            else timer_manager.refresh_from_server();
         });
-        btn_stop.clicked.connect(() => timer_mgr.stop_timer());
-        btn_new_timer.clicked.connect(() => switch_to_form());
+        button_stop.clicked.connect(() => timer_manager.stop_timer());
+        button_new_timer.clicked.connect(() => switch_to_form());
 
         return box;
     }
@@ -175,24 +204,33 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         grid.set_row_spacing(6);
         grid.set_column_spacing(6);
 
-        combo_client = new Gtk.ComboBoxText();
+        var label_customer = new Gtk.Label("Customer:");
+        label_customer.set_halign(Gtk.Align.END);
+        var label_project = new Gtk.Label("Project:");
+        label_project.set_halign(Gtk.Align.END);
+        var label_task = new Gtk.Label("Task:");
+        label_task.set_halign(Gtk.Align.END);
+        var label_description = new Gtk.Label("Description:");
+        label_description.set_halign(Gtk.Align.END);
+
+        combo_costumer = new Gtk.ComboBoxText();
         combo_project = new Gtk.ComboBoxText();
         combo_task = new Gtk.ComboBoxText();
-        entry_desc = new Gtk.Entry();
+        entry_description = new Gtk.Entry();
 
         try {
             var clients = api.list_customers();
             foreach (var cust in clients) {
-                combo_client.append(cust.id.to_string(), cust.name);
+                combo_costumer.append(cust.id.to_string(), cust.name);
             }
         } catch (Error e) {
             show_warning("Could not fetch customers: %s".printf(e.message), true);
         }
 
-        combo_client.changed.connect(() => {
+        combo_costumer.changed.connect(() => {
             combo_project.remove_all();
             combo_task.remove_all();
-            var sel = combo_client.get_active_id();
+            var sel = combo_costumer.get_active_id();
             if (sel != null) {
                 int cid = int.parse(sel);
                 try {
@@ -222,35 +260,34 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             }
         });
 
-        grid.attach(new Gtk.Label("Customer:"), 0, 0, 1, 1);
-        grid.attach(combo_client, 1, 0, 1, 1);
-        grid.attach(new Gtk.Label("Project:"), 0, 1, 1, 1);
+        grid.attach(label_customer, 0, 0, 1, 1);
+        grid.attach(combo_costumer, 1, 0, 1, 1);
+        grid.attach(label_project, 0, 1, 1, 1);
         grid.attach(combo_project, 1, 1, 1, 1);
-        grid.attach(new Gtk.Label("Task:"), 0, 2, 1, 1);
+        grid.attach(label_task, 0, 2, 1, 1);
         grid.attach(combo_task, 1, 2, 1, 1);
-        grid.attach(new Gtk.Label("Description:"), 0, 3, 1, 1);
-        grid.attach(entry_desc, 1, 3, 1, 1);
-
+        grid.attach(label_description, 0, 3, 1, 1);
+        grid.attach(entry_description, 1, 3, 1, 1);
         box.add(grid);
 
         var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
-        var btn_start_new = new Gtk.Button.with_label("Start Timer");
-        var btn_back = new Gtk.Button.with_label("Back");
-        vbox_bottom.add(btn_start_new);
-        vbox_bottom.add(btn_back);
+        var button_start_new = new Gtk.Button.with_label("Start Timer");
+        var button_back = new Gtk.Button.with_label("Back");
+        vbox_bottom.add(button_start_new);
+        vbox_bottom.add(button_back);
         box.add(vbox_bottom);
 
-        btn_back.clicked.connect(() => switch_to_main());
-        btn_start_new.clicked.connect(() => {
-            var proj_id_str = combo_project.get_active_id();
-            var act_id_str  = combo_task.get_active_id();
-            if (proj_id_str == null || act_id_str == null) return;
+        button_back.clicked.connect(() => switch_to_main());
+        button_start_new.clicked.connect(() => {
+            var project_id_str = combo_project.get_active_id();
+            var activity_id_str = combo_task.get_active_id();
+            if (project_id_str == null || activity_id_str == null) return;
 
-            var proj_id = int.parse(proj_id_str);
-            var act_id  = int.parse(act_id_str);
-            var desc    = entry_desc.get_text();
+            var project_id = int.parse(project_id_str);
+            var activity_id = int.parse(activity_id_str);
+            var description = entry_description.get_text();
 
-            timer_mgr.start_timer(proj_id, act_id, desc);
+            timer_manager.start_timer(project_id, activity_id, description);
             switch_to_main();
         });
 
@@ -272,21 +309,22 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     }
 
     private void update_labels() {
-        lbl_client.set_text("Customer: " + timer_mgr.client);
-        lbl_project.set_text("Project: " + timer_mgr.project);
-        lbl_task.set_text("Task: " + timer_mgr.task);
-        int hours = timer_mgr.elapsed_seconds / 3600;
-        int minutes = (timer_mgr.elapsed_seconds % 3600) / 60;
+        label_customer_content.set_text(timer_manager.client);
+        label_project_content.set_text(timer_manager.project);
+        label_task_content.set_text(timer_manager.task);
+        label_description_content.set_text(timer_manager.description);
+        int hours = timer_manager.elapsed_seconds / 3600;
+        int minutes = (timer_manager.elapsed_seconds % 3600) / 60;
         string hour_str = hours == 1 ? "hour" : "hours";
         string minute_str = minutes == 1 ? "minute" : "minutes";
-        lbl_duration.set_text("Duration: %d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
+        label_duration_content.set_text("%d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
     }
 
-    private void show_warning(string msg, bool in_form = false) {
+    private void show_warning(string message, bool in_form = false) {
         Gtk.Box box = in_form ? form_warning_box : main_warning_box;
         var label = get_warning_label(box);
         if (label != null) {
-            label.set_text(msg);
+            label.set_text(message);
             label.get_style_context().add_class("warning");
             box.show();
         }
