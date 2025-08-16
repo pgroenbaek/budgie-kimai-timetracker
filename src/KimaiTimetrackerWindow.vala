@@ -66,7 +66,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox.add(main_view);
 
         timer_mgr.updated.connect(update_labels);
-        timer_mgr.stopped.connect(() => lbl_duration.set_text("Duration: 00:00:00"));
+        timer_mgr.stopped.connect(() => lbl_duration.set_text("Duration: -"));
         timer_mgr.refresh_from_server();
 
         this.show_all();
@@ -78,7 +78,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         lbl_client = new Gtk.Label("Client: -");
         lbl_project = new Gtk.Label("Project: -");
         lbl_task = new Gtk.Label("Task: -");
-        lbl_duration = new Gtk.Label("Duration: 00:00:00");
+        lbl_duration = new Gtk.Label("Duration: -");
         box.add(lbl_client);
         box.add(lbl_project);
         box.add(lbl_task);
