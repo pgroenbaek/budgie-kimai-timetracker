@@ -214,10 +214,10 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         lbl_client.set_text("Client: " + timer_mgr.client);
         lbl_project.set_text("Project: " + timer_mgr.project);
         lbl_task.set_text("Task: " + timer_mgr.task);
-        int h = timer_mgr.elapsed_seconds / 3600;
-        int m = (timer_mgr.elapsed_seconds % 3600) / 60;
+        int hours = timer_mgr.elapsed_seconds / 3600;
+        int minutes = (timer_mgr.elapsed_seconds % 3600) / 60;
         string hour_str = hours == 1 ? "hour" : "hours";
         string minute_str = minutes == 1 ? "minute" : "minutes";
-        lbl_duration.set_text("Duration: %d %s, %d %s".printf(h, hour_str, m, minute_str));
+        lbl_duration.set_text("Duration: %d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
     }
 }
