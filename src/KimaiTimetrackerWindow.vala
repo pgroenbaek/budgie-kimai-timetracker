@@ -18,6 +18,7 @@
  */
 
 using GLib;
+using Gdk;
 using Gtk;
 using Budgie;
 
@@ -39,6 +40,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
     private Gtk.Box main_view;
     private Gtk.Box form_view;
+
+    private Gtk.Box main_warning_box;
+    private Gtk.Box form_warning_box;
 
     private KimaiAPI api;
     private KimaiTimerManager timer_mgr;
@@ -72,8 +76,49 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         this.show_all();
     }
 
+    private Gtk.Box build_warning_box() {
+        var css_provider = new Gtk.CssProvider();
+        css_provider.load_from_data(".warning { color: #f27835; }");
+
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        );
+
+        var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
+        box.set_halign(Gtk.Align.START);
+
+        var icon = new Gtk.Image.from_icon_name("dialog-warning-symbolic", Gtk.IconSize.BUTTON);
+        icon.get_style_context().add_class("warning");
+        box.pack_start(icon, false, false, 0);
+
+        var label = new Gtk.Label(null);
+        label.set_halign(Gtk.Align.START);
+        label.set_justify(Gtk.Justification.LEFT);
+        box.pack_start(label, true, true, 0);
+
+        box.hide();
+        return box;
+    }
+
+    private Gtk.Label? get_warning_label(Gtk.Box warning_box) {
+        var children = warning_box.get_children();
+        if (children != null) {
+            unowned GLib.List<weak Gtk.Widget> node = children;
+            while (node.next != null) {
+                node = node.next;
+            }
+            return node.data as Gtk.Label;
+        }
+        return null;
+    }
+
     private Gtk.Box build_main_view() {
         var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
+
+        main_warning_box = build_warning_box();
+        box.pack_start(main_warning_box, false, false, 0);
 
         lbl_client = new Gtk.Label("Client: -");
         lbl_project = new Gtk.Label("Project: -");
@@ -110,6 +155,10 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
     private Gtk.Box build_form_view() {
         var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
+
+        form_warning_box = build_warning_box();
+        box.pack_start(form_warning_box, false, false, 0);
+
         var grid = new Gtk.Grid();
         grid.set_row_spacing(6);
         grid.set_column_spacing(6);
@@ -125,7 +174,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                 combo_client.append(cust.id.to_string(), cust.name);
             }
         } catch (Error e) {
-            warning("Could not fetch customers: %s", e.message);
+            show_warning("Could not fetch customers: %s".printf(e.message), true);
         }
 
         combo_client.changed.connect(() => {
@@ -140,7 +189,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                         combo_project.append(proj.id.to_string(), proj.name);
                     }
                 } catch (Error e) {
-                    warning("Could not fetch projects: %s", e.message);
+                    show_warning("Could not fetch projects: %s".printf(e.message), true);
                 }
             }
         });
@@ -156,7 +205,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                         combo_task.append(act.id.to_string(), act.name);
                     }
                 } catch (Error e) {
-                    warning("Could not fetch activities: %s", e.message);
+                    show_warning("Could not fetch activities: %s".printf(e.message), true);
                 }
             }
         });
@@ -219,5 +268,20 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         string hour_str = hours == 1 ? "hour" : "hours";
         string minute_str = minutes == 1 ? "minute" : "minutes";
         lbl_duration.set_text("Duration: %d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
+    }
+
+    private void show_warning(string msg, bool in_form = false) {
+        Gtk.Box box = in_form ? form_warning_box : main_warning_box;
+        var label = get_warning_label(box);
+        if (label != null) {
+            label.set_text(msg);
+            label.get_style_context().add_class("warning");
+            box.show();
+        }
+    }
+
+    private void hide_warning(bool in_form = false) {
+        Gtk.Box box = in_form ? form_warning_box : main_warning_box;
+        box.hide();
     }
 }
