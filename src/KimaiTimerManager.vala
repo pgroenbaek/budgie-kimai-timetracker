@@ -28,6 +28,7 @@ public class KimaiTimerManager : GLib.Object {
     public KimaiTimesheet? active_timesheet { get; private set; }
     public int elapsed_seconds { get; private set; }
     private uint tick_id = 0;
+    private uint refresh_interval_ms = 5 * 1000; // 5 seconds in milliseconds
 
     public string customer {
         get { return active_timesheet != null ? active_timesheet.project.customer.name : "-"; }
@@ -45,6 +46,11 @@ public class KimaiTimerManager : GLib.Object {
     public KimaiTimerManager(KimaiAPI api) {
         this.api = api;
         refresh_from_server();
+
+        GLib.Timeout.add(refresh_interval_ms, () => {
+            refresh_from_server();
+            return true;
+        });
     }
 
     public void refresh_from_server() {
