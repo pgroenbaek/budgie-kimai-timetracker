@@ -22,6 +22,18 @@ using Gdk;
 using Gtk;
 using Budgie;
 
+// TODO: token storage
+//  var schema = new Secret.Schema ("io.grnbk.kimaitimetracker",
+//      Secret.SchemaFlags.NONE,
+//      "api-token", Secret.SchemaAttributeType.STRING);
+
+//  Secret.password_store_sync(schema, null, "Kimai API token",
+//                             api_token, null,
+//                             "api-token", "kimai", null);
+
+//  var token = Secret.password_lookup_sync(schema, null,
+//                                          "api-token", "kimai", null);
+
 public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Label lbl_client;
     private Gtk.Label lbl_project;
@@ -120,7 +132,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         main_warning_box = build_warning_box();
         box.pack_start(main_warning_box, false, false, 0);
 
-        lbl_client = new Gtk.Label("Client: -");
+        lbl_client = new Gtk.Label("Customer: -");
         lbl_project = new Gtk.Label("Project: -");
         lbl_task = new Gtk.Label("Task: -");
         lbl_duration = new Gtk.Label("Duration: -");
@@ -210,7 +222,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             }
         });
 
-        grid.attach(new Gtk.Label("Client:"), 0, 0, 1, 1);
+        grid.attach(new Gtk.Label("Customer:"), 0, 0, 1, 1);
         grid.attach(combo_client, 1, 0, 1, 1);
         grid.attach(new Gtk.Label("Project:"), 0, 1, 1, 1);
         grid.attach(combo_project, 1, 1, 1, 1);
@@ -260,7 +272,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     }
 
     private void update_labels() {
-        lbl_client.set_text("Client: " + timer_mgr.client);
+        lbl_client.set_text("Customer: " + timer_mgr.client);
         lbl_project.set_text("Project: " + timer_mgr.project);
         lbl_task.set_text("Task: " + timer_mgr.task);
         int hours = timer_mgr.elapsed_seconds / 3600;

@@ -132,19 +132,19 @@ public class KimaiAPI : GLib.Object {
             var cust_obj = proj_obj.get_object_member("customer");
             var act_obj  = obj.get_object_member("activity");
 
-            var ts = new KimaiTimesheet();
-            ts.id = (int) obj.get_int_member("id");
-            ts.description = obj.get_string_member("description");
-            ts.begin = new DateTime.from_iso8601(obj.get_string_member("begin"), null);
+            var timesheet = new KimaiTimesheet();
+            timesheet.id = (int) obj.get_int_member("id");
+            timesheet.description = obj.get_string_member("description");
+            timesheet.begin = new DateTime.from_iso8601(obj.get_string_member("begin"), null);
 
             if (obj.has_member("end")) {
                 var end_str = obj.get_string_member("end");
                 if (end_str != null && end_str.length > 0) {
-                    ts.end = new DateTime.from_iso8601(end_str, null);
+                    timesheet.end = new DateTime.from_iso8601(end_str, null);
                 }
             }
 
-            ts.project = new KimaiProject() {
+            timesheet.project = new KimaiProject() {
                 id = (int) proj_obj.get_int_member("id"),
                 name = proj_obj.get_string_member("name"),
                 customer = new KimaiCustomer() {
@@ -153,12 +153,12 @@ public class KimaiAPI : GLib.Object {
                 }
             };
 
-            ts.activity = new KimaiActivity() {
+            timesheet.activity = new KimaiActivity() {
                 id = (int) act_obj.get_int_member("id"),
                 name = act_obj.get_string_member("name")
             };
 
-            result.append(ts);
+            result.append(timesheet);
         }
 
         return result;

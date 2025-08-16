@@ -36,6 +36,9 @@ public class KimaiTimetrackerApplet : Budgie.Applet {
 
     private GLib.Settings? settings;
 
+    private string? timetracker_inactive;
+    private string? timetracker_running;
+
     public string uuid { public set; public get; }
 
     public KimaiTimetrackerApplet(string uuid) {
@@ -43,12 +46,19 @@ public class KimaiTimetrackerApplet : Budgie.Applet {
 
         settings = new GLib.Settings("io.grnbk.kimaitimetracker");
 
+        timetracker_inactive = "kimai-timetracker";
+        timetracker_running = "kimai-timetracker-running";
+
         event_box = new Gtk.EventBox();
         this.add(event_box);
-        applet_icon = new Gtk.Image.from_icon_name("kimai-timetracker", Gtk.IconSize.MENU);
+        applet_icon = new Gtk.Image.from_icon_name(get_current_mode_icon(), Gtk.IconSize.MENU);
         event_box.add(applet_icon);
 
         popover = new KimaiTimetrackerWindow(event_box, settings);
+
+        settings.changed["timetracker-running"].connect(() => {
+            update_icon();
+        });
 
         event_box.button_press_event.connect((e) => {
             if (e.button == 1) {
@@ -64,6 +74,18 @@ public class KimaiTimetrackerApplet : Budgie.Applet {
         });
 
         this.show_all();
+    }
+
+    private string get_current_mode_icon() {
+        bool running = settings.get_boolean("timetracker-running");
+        string state_icon = (running) ? timetracker_running : timetracker_inactive;
+        return state_icon;
+    }
+
+    private void update_icon() {
+        if (applet_icon != null) {
+            applet_icon.set_from_icon_name(get_current_mode_icon(), Gtk.IconSize.MENU);
+        }
     }
 
     public override void update_popovers(Budgie.PopoverManager? manager) {
