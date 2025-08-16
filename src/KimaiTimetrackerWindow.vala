@@ -17,9 +17,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-public class KimaiTimetrackerWindow : Budgie.Popover {
-    private unowned Settings? settings;
+using GLib;
+using Gtk;
+using Budgie;
 
+public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Label lbl_client;
     private Gtk.Label lbl_project;
     private Gtk.Label lbl_task;
@@ -38,11 +40,18 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Box main_view;
     private Gtk.Box form_view;
 
+    private KimaiAPI api;
     private KimaiTimerManager timer_mgr;
 
-    public KimaiTimetrackerWindow(Gtk.Widget? parent, Settings? c_settings, KimaiAPI api) {
-        Object(relative_to: parent);
+    private unowned GLib.Settings? settings;
+
+    public KimaiTimetrackerWindow(Gtk.Widget? c_parent, GLib.Settings? c_settings) {
+        Object(relative_to: c_parent);
         settings = c_settings;
+        get_style_context().add_class("kimaitimetracker-popover");
+
+        api = new KimaiAPI("https://demo.kimai.org/api", "");
+        timer_mgr = new KimaiTimerManager(api);
 
         var vbox = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
         vbox.set_margin_top(6);
@@ -56,21 +65,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         form_view = build_form_view();
         vbox.add(main_view);
 
-        timer_mgr = new KimaiTimerManager(api);
-
-        timer_mgr.updated.connect(() => {
-            lbl_client.set_text("Client: " + timer_mgr.client);
-            lbl_project.set_text("Project: " + timer_mgr.project);
-            lbl_task.set_text("Task: " + timer_mgr.task);
-            int h = timer_mgr.elapsed_seconds / 3600;
-            int m = (timer_mgr.elapsed_seconds % 3600) / 60;
-            int s = timer_mgr.elapsed_seconds % 60;
-            lbl_duration.set_text("Duration: %02d:%02d:%02d".printf(h, m, s));
-        });
-
-        timer_mgr.stopped.connect(() => {
-            lbl_duration.set_text("Duration: 00:00:00");
-        });
+        timer_mgr.updated.connect(update_labels);
+        timer_mgr.stopped.connect(() => lbl_duration.set_text("Duration: 00:00:00"));
+        timer_mgr.refresh_from_server();
 
         this.show_all();
     }
@@ -102,14 +99,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.add(vbox_bottom);
 
         btn_start.clicked.connect(() => {
-            var desc = entry_desc?.get_text() ?? "";
-            timer_mgr.start_timer(
-                combo_project.get_active() >= 0 ? combo_project.get_active() : 0,
-                combo_task.get_active() >= 0 ? combo_task.get_active() : 0,
-                desc
-            );
+            if (timer_mgr.active_timesheet == null) switch_to_form();
+            else timer_mgr.refresh_from_server();
         });
-
         btn_stop.clicked.connect(() => timer_mgr.stop_timer());
         btn_new_timer.clicked.connect(() => switch_to_form());
 
@@ -118,40 +110,64 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
     private Gtk.Box build_form_view() {
         var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
-
         var grid = new Gtk.Grid();
         grid.set_row_spacing(6);
         grid.set_column_spacing(6);
 
-        var lbl_c = new Gtk.Label("Client:");
-        lbl_c.set_halign(Gtk.Align.START);
         combo_client = new Gtk.ComboBoxText();
-        combo_client.append_text("ACME Corp");
-        combo_client.append_text("Globex Inc");
-
-        var lbl_p = new Gtk.Label("Project:");
-        lbl_p.set_halign(Gtk.Align.START);
         combo_project = new Gtk.ComboBoxText();
-        combo_project.append_text("Website Redesign");
-        combo_project.append_text("Mobile App");
-
-        var lbl_t = new Gtk.Label("Task:");
-        lbl_t.set_halign(Gtk.Align.START);
         combo_task = new Gtk.ComboBoxText();
-        combo_task.append_text("Coding Applet");
-        combo_task.append_text("Design UI");
-
-        var lbl_d = new Gtk.Label("Description:");
-        lbl_d.set_halign(Gtk.Align.START);
         entry_desc = new Gtk.Entry();
 
-        grid.attach(lbl_c, 0, 0, 1, 1);
+        try {
+            var clients = api.list_customers();
+            foreach (var cust in clients) {
+                combo_client.append(cust.id.to_string(), cust.name);
+            }
+        } catch (Error e) {
+            warning("Could not fetch customers: %s", e.message);
+        }
+
+        combo_client.changed.connect(() => {
+            combo_project.remove_all();
+            combo_task.remove_all();
+            var sel = combo_client.get_active_id();
+            if (sel != null) {
+                int cid = int.parse(sel);
+                try {
+                    var projects = api.list_projects(cid);
+                    foreach (var proj in projects) {
+                        combo_project.append(proj.id.to_string(), proj.name);
+                    }
+                } catch (Error e) {
+                    warning("Could not fetch projects: %s", e.message);
+                }
+            }
+        });
+
+        combo_project.changed.connect(() => {
+            combo_task.remove_all();
+            var selp = combo_project.get_active_id();
+            if (selp != null) {
+                int pid = int.parse(selp);
+                try {
+                    var acts = api.list_activities(pid);
+                    foreach (var act in acts) {
+                        combo_task.append(act.id.to_string(), act.name);
+                    }
+                } catch (Error e) {
+                    warning("Could not fetch activities: %s", e.message);
+                }
+            }
+        });
+
+        grid.attach(new Gtk.Label("Client:"), 0, 0, 1, 1);
         grid.attach(combo_client, 1, 0, 1, 1);
-        grid.attach(lbl_p, 0, 1, 1, 1);
+        grid.attach(new Gtk.Label("Project:"), 0, 1, 1, 1);
         grid.attach(combo_project, 1, 1, 1, 1);
-        grid.attach(lbl_t, 0, 2, 1, 1);
+        grid.attach(new Gtk.Label("Task:"), 0, 2, 1, 1);
         grid.attach(combo_task, 1, 2, 1, 1);
-        grid.attach(lbl_d, 0, 3, 1, 1);
+        grid.attach(new Gtk.Label("Description:"), 0, 3, 1, 1);
         grid.attach(entry_desc, 1, 3, 1, 1);
 
         box.add(grid);
@@ -164,14 +180,17 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.add(vbox_bottom);
 
         btn_back.clicked.connect(() => switch_to_main());
-
         btn_start_new.clicked.connect(() => {
+            var proj_id_str = combo_project.get_active_id();
+            var act_id_str  = combo_task.get_active_id();
+            if (proj_id_str == null || act_id_str == null) return;
+
+            var proj_id = int.parse(proj_id_str);
+            var act_id  = int.parse(act_id_str);
+            var desc    = entry_desc.get_text();
+
+            timer_mgr.start_timer(proj_id, act_id, desc);
             switch_to_main();
-            timer_mgr.start_timer(
-                combo_project.get_active() >= 0 ? combo_project.get_active() : 0,
-                combo_task.get_active() >= 0 ? combo_task.get_active() : 0,
-                entry_desc.get_text()
-            );
         });
 
         return box;
@@ -189,5 +208,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         parent.remove(form_view);
         parent.add(main_view);
         this.show_all();
+    }
+
+    private void update_labels() {
+        lbl_client.set_text("Client: " + timer_mgr.client);
+        lbl_project.set_text("Project: " + timer_mgr.project);
+        lbl_task.set_text("Task: " + timer_mgr.task);
+        int h = timer_mgr.elapsed_seconds / 3600;
+        int m = (timer_mgr.elapsed_seconds % 3600) / 60;
+        int s = timer_mgr.elapsed_seconds % 60;
+        lbl_duration.set_text("Duration: %02d:%02d:%02d".printf(h, m, s));
     }
 }

@@ -17,96 +17,90 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-public class KimaiTimerManager : Object {
-    private KimaiAPI api;
-    private uint poll_id = 0;
-    private uint timer_id = 0;
-    private int elapsed_seconds = 0;
-    private int current_timesheet_id = -1;
+using GLib;
 
-    public string client { get; private set; } = "-";
-    public string project { get; private set; } = "-";
-    public string task { get; private set; } = "-";
+public class KimaiTimerManager : GLib.Object {
+    private KimaiAPI api;
 
     public signal void updated();
     public signal void stopped();
 
-    public KimaiTimerManager(KimaiAPI api_instance) {
-        api = api_instance;
-        start_polling();
+    public KimaiTimesheet? active_timesheet { get; private set; }
+    public int elapsed_seconds { get; private set; }
+    private uint tick_id = 0;
+
+    public string client {
+        get { return active_timesheet != null ? active_timesheet.project.customer.name : "-"; }
+    }
+    public string project {
+        get { return active_timesheet != null ? active_timesheet.project.name : "-"; }
+    }
+    public string task {
+        get { return active_timesheet != null ? active_timesheet.activity.name : "-"; }
     }
 
-    private void start_polling() {
-        poll_id = GLib.Timeout.add_seconds(5, () => {
-            try {
-                sync_with_api();
-            } catch (Error e) {
-                warning("Failed to sync with Kimai: %s", e.message);
-            }
-            return true; // continue polling
-        });
+    public KimaiTimerManager(KimaiAPI api) {
+        this.api = api;
+        refresh_from_server();
     }
 
-    private void sync_with_api() throws Error {
-        var active_timesheets = api.list_active_timesheets();
-        if (active_timesheets.get_length() > 0) {
-            var ts = active_timesheets.get_element(0).get_object();
-            current_timesheet_id = ts["id"].get_int();
-            client = ts["project"]["customer"]["name"].get_string();
-            project = ts["project"]["name"].get_string();
-            task = ts["activity"]["name"].get_string();
-            elapsed_seconds = ts["duration"].get_int();
-
-            start_local_timer();
-            updated.emit();
-        } else {
-            stop_local_timer();
-            stopped.emit();
-        }
-    }
-
-    private void start_local_timer() {
-        if (timer_id == 0) {
-            timer_id = GLib.Timeout.add_seconds(1, () => {
-                elapsed_seconds++;
-                updated.emit();
-                return true;
-            });
-        }
-    }
-
-    private void stop_local_timer() {
-        if (timer_id != 0) {
-            GLib.Source.remove(timer_id);
-            timer_id = 0;
-        }
-        current_timesheet_id = -1;
-    }
-
-    public void start_timer(int project_id, int activity_id, string description) {
+    public void refresh_from_server() {
         try {
-            var ts = api.start_timer(project_id, activity_id, description);
-            current_timesheet_id = ts["id"].get_int();
-            client = ts["project"]["customer"]["name"].get_string();
-            project = ts["project"]["name"].get_string();
-            task = ts["activity"]["name"].get_string();
-            elapsed_seconds = 0;
-            start_local_timer();
-            updated.emit();
+            var active = api.list_active_timesheets();
+            if (active != null && active.length() > 0) {
+                active_timesheet = active.nth_data(0);
+                elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
+                start_tick();
+            } else {
+                clear_state();
+            }
+            updated();
         } catch (Error e) {
-            warning("Failed to start timer: %s", e.message);
+            warning("Failed to refresh timers: %s", e.message);
+        }
+    }
+
+    public void start_timer(int project_id, int activity_id, string desc) {
+        try {
+            active_timesheet = api.start_timer(project_id, activity_id, desc);
+            elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
+            start_tick();
+            updated();
+        } catch (Error e) {
+            warning("Start failed: %s", e.message);
         }
     }
 
     public void stop_timer() {
-        if (current_timesheet_id != -1) {
-            try {
-                api.stop_timer(current_timesheet_id);
-            } catch (Error e) {
-                warning("Failed to stop timer: %s", e.message);
-            }
+        if (active_timesheet == null) return;
+        try {
+            api.stop_timer(active_timesheet.id);
+            clear_state();
+            stopped();
+        } catch (Error e) {
+            warning("Stop failed: %s", e.message);
         }
-        stop_local_timer();
-        stopped.emit();
+    }
+
+    private void clear_state() {
+        stop_tick();
+        active_timesheet = null;
+        elapsed_seconds = 0;
+    }
+
+    private void start_tick() {
+        if (tick_id != 0) return;
+        tick_id = Timeout.add_seconds(1, () => {
+            elapsed_seconds++;
+            updated();
+            return true;
+        });
+    }
+
+    private void stop_tick() {
+        if (tick_id != 0) {
+            Source.remove(tick_id);
+            tick_id = 0;
+        }
     }
 }

@@ -17,6 +17,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using GLib;
+using Gtk;
+
 public class KimaiTimetrackerSettings : Gtk.Grid {
     private GLib.Settings settings;
 
