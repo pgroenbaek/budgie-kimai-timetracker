@@ -29,7 +29,7 @@ public class KimaiTimerManager : GLib.Object {
     public int elapsed_seconds { get; private set; }
     private uint tick_id = 0;
 
-    public string client {
+    public string customer {
         get { return active_timesheet != null ? active_timesheet.project.customer.name : "-"; }
     }
     public string project {

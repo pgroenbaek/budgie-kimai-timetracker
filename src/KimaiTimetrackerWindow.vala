@@ -219,9 +219,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         entry_description = new Gtk.Entry();
 
         try {
-            var clients = api.list_customers();
-            foreach (var cust in clients) {
-                combo_costumer.append(cust.id.to_string(), cust.name);
+            var customers = api.list_customers();
+            foreach (var customer in customers) {
+                combo_costumer.append(customer.id.to_string(), customer.name);
             }
         } catch (Error e) {
             show_warning("Could not fetch customers: %s".printf(e.message), true);
@@ -309,7 +309,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     }
 
     private void update_labels() {
-        label_customer_content.set_text(timer_manager.client);
+        label_customer_content.set_text(timer_manager.customer);
         label_project_content.set_text(timer_manager.project);
         label_task_content.set_text(timer_manager.task);
         label_description_content.set_text(timer_manager.description);
