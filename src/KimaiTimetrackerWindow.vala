@@ -52,9 +52,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Button button_new_timer;
     private Gtk.Button button_settings;
 
-    private Gtk.ComboBoxText combo_costumer;
-    private Gtk.ComboBoxText combo_project;
-    private Gtk.ComboBoxText combo_task;
+    private Gtk.ComboBoxText combobox_costumer;
+    private Gtk.ComboBoxText combobox_project;
+    private Gtk.ComboBoxText combobox_task;
     private Gtk.Entry entry_description;
 
     private Gtk.Box main_view;
@@ -219,30 +219,30 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         var label_description_title = new Gtk.Label("Description:");
         label_description_title.set_halign(Gtk.Align.END);
 
-        combo_costumer = new Gtk.ComboBoxText();
-        combo_project = new Gtk.ComboBoxText();
-        combo_task = new Gtk.ComboBoxText();
+        combobox_costumer = new Gtk.ComboBoxText();
+        combobox_project = new Gtk.ComboBoxText();
+        combobox_task = new Gtk.ComboBoxText();
         entry_description = new Gtk.Entry();
 
         try {
             var customers = api.list_customers();
             foreach (var customer in customers) {
-                combo_costumer.append(customer.id.to_string(), customer.name);
+                combobox_costumer.append(customer.id.to_string(), customer.name);
             }
         } catch (Error e) {
             show_warning("Could not fetch customers: %s".printf(e.message), true);
         }
 
-        combo_costumer.changed.connect(() => {
-            combo_project.remove_all();
-            combo_task.remove_all();
-            var customer_id_str = combo_costumer.get_active_id();
+        combobox_costumer.changed.connect(() => {
+            combobox_project.remove_all();
+            combobox_task.remove_all();
+            var customer_id_str = combobox_costumer.get_active_id();
             if (customer_id_str != null) {
                 int customer_id = int.parse(customer_id_str);
                 try {
                     var projects = api.list_projects(customer_id);
                     foreach (var project in projects) {
-                        combo_project.append(project.id.to_string(), project.name);
+                        combobox_project.append(project.id.to_string(), project.name);
                     }
                 } catch (Error e) {
                     show_warning("Could not fetch projects: %s".printf(e.message), true);
@@ -250,15 +250,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             }
         });
 
-        combo_project.changed.connect(() => {
-            combo_task.remove_all();
-            var project_id_str = combo_project.get_active_id();
+        combobox_project.changed.connect(() => {
+            combobox_task.remove_all();
+            var project_id_str = combobox_project.get_active_id();
             if (project_id_str != null) {
                 int project_id = int.parse(project_id_str);
                 try {
                     var activities = api.list_activities(project_id);
                     foreach (var activity in activities) {
-                        combo_task.append(activity.id.to_string(), activity.name);
+                        combobox_task.append(activity.id.to_string(), activity.name);
                     }
                 } catch (Error e) {
                     show_warning("Could not fetch activities: %s".printf(e.message), true);
@@ -267,11 +267,11 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         });
 
         grid.attach(label_customer_title, 0, 0, 1, 1);
-        grid.attach(combo_costumer, 1, 0, 1, 1);
+        grid.attach(combobox_costumer, 1, 0, 1, 1);
         grid.attach(label_project_title, 0, 1, 1, 1);
-        grid.attach(combo_project, 1, 1, 1, 1);
+        grid.attach(combobox_project, 1, 1, 1, 1);
         grid.attach(label_task_title, 0, 2, 1, 1);
-        grid.attach(combo_task, 1, 2, 1, 1);
+        grid.attach(combobox_task, 1, 2, 1, 1);
         grid.attach(label_description_title, 0, 3, 1, 1);
         grid.attach(entry_description, 1, 3, 1, 1);
         box.add(grid);
@@ -285,8 +285,8 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         button_back.clicked.connect(() => switch_to_main());
         button_start_new.clicked.connect(() => {
-            var project_id_str = combo_project.get_active_id();
-            var activity_id_str = combo_task.get_active_id();
+            var project_id_str = combobox_project.get_active_id();
+            var activity_id_str = combobox_task.get_active_id();
             if (project_id_str == null || activity_id_str == null) return;
 
             var project_id = int.parse(project_id_str);

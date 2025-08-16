@@ -63,9 +63,9 @@ public class KimaiTimerManager : GLib.Object {
         }
     }
 
-    public void start_timer(int project_id, int activity_id, string desc) {
+    public void start_timer(int project_id, int activity_id, string description) {
         try {
-            active_timesheet = api.start_timer(project_id, activity_id, desc);
+            active_timesheet = api.start_timer(project_id, activity_id, description);
             elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
             start_tick();
             updated();
