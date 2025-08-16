@@ -22,7 +22,6 @@ using Gdk;
 using Gtk;
 using Budgie;
 
-// TODO: token storage
 //  var schema = new Secret.Schema ("io.grnbk.kimaitimetracker",
 //      Secret.SchemaFlags.NONE,
 //      "api-token", Secret.SchemaAttributeType.STRING);
@@ -34,12 +33,19 @@ using Budgie;
 //  var token = Secret.password_lookup_sync(schema, null,
 //                                          "api-token", "kimai", null);
 
+// TODO
+// - API token storage (see code example above)
+// - settings UI
+// - make sure displaying customer/task/project/description works
+// - update settings values
+// - proper warnings
+
 public class KimaiTimetrackerWindow : Budgie.Popover {
-    private Gtk.Label label_customer_content;
-    private Gtk.Label label_project_content;
-    private Gtk.Label label_task_content;
-    private Gtk.Label label_description_content;
-    private Gtk.Label label_duration_content;
+    private Gtk.Label label_customer;
+    private Gtk.Label label_project;
+    private Gtk.Label label_task;
+    private Gtk.Label label_description;
+    private Gtk.Label label_duration;
 
     private Gtk.Button button_start;
     private Gtk.Button button_stop;
@@ -83,7 +89,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox.add(main_view);
 
         timer_manager.updated.connect(update_labels);
-        timer_manager.stopped.connect(() => label_duration_content.set_text("-"));
+        timer_manager.stopped.connect(() => label_duration.set_text("-"));
         timer_manager.refresh_from_server();
 
         this.show_all();
@@ -133,41 +139,41 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         main_warning_box = build_warning_box();
         box.pack_start(main_warning_box, false, false, 0);
 
-        var label_customer = new Gtk.Label("Customer:");
-        label_customer.set_halign(Gtk.Align.END);
-        var label_project = new Gtk.Label("Project:");
-        label_project.set_halign(Gtk.Align.END);
-        var label_task = new Gtk.Label("Task:");
-        label_task.set_halign(Gtk.Align.END);
-        var label_duration = new Gtk.Label("Duration:");
-        label_duration.set_halign(Gtk.Align.END);
-        var label_description = new Gtk.Label("Description:");
-        label_description.set_halign(Gtk.Align.END);
+        var label_customer_title = new Gtk.Label("Customer:");
+        label_customer_title.set_halign(Gtk.Align.END);
+        var label_project_title = new Gtk.Label("Project:");
+        label_project_title.set_halign(Gtk.Align.END);
+        var label_task_title = new Gtk.Label("Task:");
+        label_task_title.set_halign(Gtk.Align.END);
+        var label_duration_title = new Gtk.Label("Duration:");
+        label_duration_title.set_halign(Gtk.Align.END);
+        var label_description_title = new Gtk.Label("Description:");
+        label_description_title.set_halign(Gtk.Align.END);
 
-        label_customer_content = new Gtk.Label("-");
-        label_customer_content.set_halign(Gtk.Align.START);
-        label_project_content = new Gtk.Label("-");
-        label_project_content.set_halign(Gtk.Align.START);
-        label_task_content = new Gtk.Label("-");
-        label_task_content.set_halign(Gtk.Align.START);
-        label_description_content = new Gtk.Label("-");
-        label_description_content.set_halign(Gtk.Align.START);
-        label_duration_content = new Gtk.Label("-");
-        label_duration_content.set_halign(Gtk.Align.START);
+        label_customer = new Gtk.Label("-");
+        label_customer.set_halign(Gtk.Align.START);
+        label_project = new Gtk.Label("-");
+        label_project.set_halign(Gtk.Align.START);
+        label_task = new Gtk.Label("-");
+        label_task.set_halign(Gtk.Align.START);
+        label_description = new Gtk.Label("-");
+        label_description.set_halign(Gtk.Align.START);
+        label_duration = new Gtk.Label("-");
+        label_duration.set_halign(Gtk.Align.START);
 
         var grid = new Gtk.Grid();
         grid.set_row_spacing(6);
         grid.set_column_spacing(6);
-        grid.attach(label_customer, 0, 0, 1, 1);
-        grid.attach(label_customer_content, 1, 0, 1, 1);
-        grid.attach(label_project, 0, 1, 1, 1);
-        grid.attach(label_project_content, 1, 1, 1, 1);
-        grid.attach(label_task, 0, 2, 1, 1);
-        grid.attach(label_task_content, 1, 2, 1, 1);
-        grid.attach(label_description, 0, 3, 1, 1);
-        grid.attach(label_description_content, 1, 3, 1, 1);
-        grid.attach(label_duration, 0, 4, 1, 1);
-        grid.attach(label_duration_content, 1, 4, 1, 1);
+        grid.attach(label_customer_title, 0, 0, 1, 1);
+        grid.attach(label_customer, 1, 0, 1, 1);
+        grid.attach(label_project_title, 0, 1, 1, 1);
+        grid.attach(label_project, 1, 1, 1, 1);
+        grid.attach(label_task_title, 0, 2, 1, 1);
+        grid.attach(label_task, 1, 2, 1, 1);
+        grid.attach(label_description_title, 0, 3, 1, 1);
+        grid.attach(label_description, 1, 3, 1, 1);
+        grid.attach(label_duration_title, 0, 4, 1, 1);
+        grid.attach(label_duration, 1, 4, 1, 1);
         box.add(grid);
 
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
@@ -204,14 +210,14 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         grid.set_row_spacing(6);
         grid.set_column_spacing(6);
 
-        var label_customer = new Gtk.Label("Customer:");
-        label_customer.set_halign(Gtk.Align.END);
-        var label_project = new Gtk.Label("Project:");
-        label_project.set_halign(Gtk.Align.END);
-        var label_task = new Gtk.Label("Task:");
-        label_task.set_halign(Gtk.Align.END);
-        var label_description = new Gtk.Label("Description:");
-        label_description.set_halign(Gtk.Align.END);
+        var label_customer_title = new Gtk.Label("Customer:");
+        label_customer_title.set_halign(Gtk.Align.END);
+        var label_project_title = new Gtk.Label("Project:");
+        label_project_title.set_halign(Gtk.Align.END);
+        var label_task_title = new Gtk.Label("Task:");
+        label_task_title.set_halign(Gtk.Align.END);
+        var label_description_title = new Gtk.Label("Description:");
+        label_description_title.set_halign(Gtk.Align.END);
 
         combo_costumer = new Gtk.ComboBoxText();
         combo_project = new Gtk.ComboBoxText();
@@ -230,13 +236,13 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         combo_costumer.changed.connect(() => {
             combo_project.remove_all();
             combo_task.remove_all();
-            var sel = combo_costumer.get_active_id();
-            if (sel != null) {
-                int cid = int.parse(sel);
+            var customer_id_str = combo_costumer.get_active_id();
+            if (customer_id_str != null) {
+                int customer_id = int.parse(customer_id_str);
                 try {
-                    var projects = api.list_projects(cid);
-                    foreach (var proj in projects) {
-                        combo_project.append(proj.id.to_string(), proj.name);
+                    var projects = api.list_projects(customer_id);
+                    foreach (var project in projects) {
+                        combo_project.append(project.id.to_string(), project.name);
                     }
                 } catch (Error e) {
                     show_warning("Could not fetch projects: %s".printf(e.message), true);
@@ -246,13 +252,13 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         combo_project.changed.connect(() => {
             combo_task.remove_all();
-            var selp = combo_project.get_active_id();
-            if (selp != null) {
-                int pid = int.parse(selp);
+            var project_id_str = combo_project.get_active_id();
+            if (project_id_str != null) {
+                int project_id = int.parse(project_id_str);
                 try {
-                    var acts = api.list_activities(pid);
-                    foreach (var act in acts) {
-                        combo_task.append(act.id.to_string(), act.name);
+                    var activities = api.list_activities(project_id);
+                    foreach (var activity in activities) {
+                        combo_task.append(activity.id.to_string(), activity.name);
                     }
                 } catch (Error e) {
                     show_warning("Could not fetch activities: %s".printf(e.message), true);
@@ -260,13 +266,13 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             }
         });
 
-        grid.attach(label_customer, 0, 0, 1, 1);
+        grid.attach(label_customer_title, 0, 0, 1, 1);
         grid.attach(combo_costumer, 1, 0, 1, 1);
-        grid.attach(label_project, 0, 1, 1, 1);
+        grid.attach(label_project_title, 0, 1, 1, 1);
         grid.attach(combo_project, 1, 1, 1, 1);
-        grid.attach(label_task, 0, 2, 1, 1);
+        grid.attach(label_task_title, 0, 2, 1, 1);
         grid.attach(combo_task, 1, 2, 1, 1);
-        grid.attach(label_description, 0, 3, 1, 1);
+        grid.attach(label_description_title, 0, 3, 1, 1);
         grid.attach(entry_description, 1, 3, 1, 1);
         box.add(grid);
 
@@ -309,15 +315,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     }
 
     private void update_labels() {
-        label_customer_content.set_text(timer_manager.customer);
-        label_project_content.set_text(timer_manager.project);
-        label_task_content.set_text(timer_manager.task);
-        label_description_content.set_text(timer_manager.description);
+        label_customer.set_text(timer_manager.customer);
+        label_project.set_text(timer_manager.project);
+        label_task.set_text(timer_manager.task);
+        label_description.set_text(timer_manager.description);
         int hours = timer_manager.elapsed_seconds / 3600;
         int minutes = (timer_manager.elapsed_seconds % 3600) / 60;
         string hour_str = hours == 1 ? "hour" : "hours";
         string minute_str = minutes == 1 ? "minute" : "minutes";
-        label_duration_content.set_text("%d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
+        label_duration.set_text("%d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
     }
 
     private void show_warning(string message, bool in_form = false) {
