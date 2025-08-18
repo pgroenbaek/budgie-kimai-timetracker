@@ -9,7 +9,8 @@ Build-Depends: debhelper (>= 12),
                budgie-core-dev,
                libglib2.0-dev,
                libjson-glib-dev,
-               libsoup3-dev | libsoup2.4-dev
+               libsoup2.4-dev,
+               libsecret-1-dev
 Standards-Version: 4.5.0
 Homepage: https://github.com/pgroenbaek/budgie-kimai-timetracker
 Vcs-Git: https://github.com/pgroenbaek/budgie-kimai-timetracker.git
@@ -22,6 +23,7 @@ Depends: ${shlibs:Depends},
          budgie-desktop,
          libgtk-3-0,
          libjson-glib-1.0-0,
-         libsoup-3.0-0 | libsoup2.4-1,
-         libc6
+         libsoup2.4-1,
+         libc6,
+         libsecret-1-0
 Description: A Budgie applet to track time using the Kimai Timetracker

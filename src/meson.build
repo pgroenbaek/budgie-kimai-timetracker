@@ -5,6 +5,7 @@ glib_dep = dependency('glib-2.0')
 gettext_dep = dependency('gettext', required: false)
 json_glib_dep = dependency('json-glib-1.0', required: true)
 soup_dep = dependency('libsoup-2.4', required: true)
+secret_dep = dependency('libsecret-1', required: true)
 
 applet_kimaitimetracker_sources = [
   'KimaiAPI.vala',
@@ -22,6 +23,7 @@ applet_kimaitimetracker_deps = [
   gettext_dep,
   json_glib_dep,
   soup_dep,
+  secret_dep,
 ]
 
 add_project_arguments(

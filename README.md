@@ -28,7 +28,7 @@ Ensure you have the required dependencies installed:
 ```bash
 sudo apt install budgie-desktop budgie-core budgie-core-dev
 sudo apt install meson ninja-build valac
-sudo apt install libgtk-3-dev libglib2.0-dev libjson-glib-dev libsoup2.4-dev
+sudo apt install libgtk-3-dev libglib2.0-dev libjson-glib-dev libsoup2.4-dev libsecret-1-dev
 ```
 
 

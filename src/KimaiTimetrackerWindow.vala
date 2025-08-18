@@ -49,7 +49,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
     private Gtk.Button button_start;
     private Gtk.Button button_stop;
-    private Gtk.Button button_new_timer;
+    private Gtk.Button button_new;
     private Gtk.Button button_settings;
 
     private Gtk.ComboBoxText combobox_costumer;
@@ -95,6 +95,25 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         this.show_all();
     }
 
+    private Gtk.Button create_icon_button(string icon_name, string label_text) {
+        var hbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
+        var image = new Gtk.Image.from_icon_name(icon_name, Gtk.IconSize.BUTTON);
+
+        var label = new Gtk.Label(label_text);
+        label.set_halign(Gtk.Align.START);
+
+        hbox.pack_start(image, false, false, 0);
+        hbox.pack_start(label, false, false, 0);
+
+        hbox.set_halign(Gtk.Align.CENTER);
+        hbox.set_valign(Gtk.Align.CENTER);
+
+        var button = new Gtk.Button();
+        button.add(hbox);
+
+        return button;
+    }
+
     private Gtk.Box build_warning_box() {
         var css_provider = new Gtk.CssProvider();
         css_provider.load_from_data(".warning { color: #f27835; }");
@@ -119,18 +138,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         box.hide();
         return box;
-    }
-
-    private Gtk.Label? get_warning_label(Gtk.Box warning_box) {
-        var children = warning_box.get_children();
-        if (children != null) {
-            unowned GLib.List<weak Gtk.Widget> node = children;
-            while (node.next != null) {
-                node = node.next;
-            }
-            return node.data as Gtk.Label;
-        }
-        return null;
     }
 
     private Gtk.Box build_main_view() {
@@ -177,16 +184,16 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.add(grid);
 
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-        button_start = new Gtk.Button.with_label("▶ Start");
-        button_stop  = new Gtk.Button.with_label("■ Stop");
+        button_start = create_icon_button("media-playback-start-symbolic", "Start");
+        button_stop = create_icon_button("media-playback-stop-symbolic", "Stop");
+        button_new = create_icon_button("list-add-symbolic", "New Timer");
         hbox_buttons.add(button_start);
         hbox_buttons.add(button_stop);
+        hbox_buttons.add(button_new);
         box.add(hbox_buttons);
 
         var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
-        button_new_timer = new Gtk.Button.with_label("+ New Timer");
-        button_settings = new Gtk.Button.with_label("Settings");
-        vbox_bottom.add(button_new_timer);
+        button_settings = create_icon_button("emblem-system-symbolic", "Settings");
         vbox_bottom.add(button_settings);
         box.add(vbox_bottom);
 
@@ -195,7 +202,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             else timer_manager.refresh_from_server();
         });
         button_stop.clicked.connect(() => timer_manager.stop_timer());
-        button_new_timer.clicked.connect(() => switch_to_form());
+        button_new.clicked.connect(() => switch_to_form());
 
         return box;
     }
@@ -324,6 +331,18 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         string hour_str = hours == 1 ? "hour" : "hours";
         string minute_str = minutes == 1 ? "minute" : "minutes";
         label_duration.set_text("%d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
+    }
+
+    private Gtk.Label? get_warning_label(Gtk.Box warning_box) {
+        var children = warning_box.get_children();
+        if (children != null) {
+            unowned GLib.List<weak Gtk.Widget> node = children;
+            while (node.next != null) {
+                node = node.next;
+            }
+            return node.data as Gtk.Label;
+        }
+        return null;
     }
 
     private void show_warning(string message, bool in_form = false) {
