@@ -23,24 +23,6 @@ using Gtk;
 using Secret;
 using Budgie;
 
-//  var schema = new Secret.Schema ("io.grnbk.kimaitimetracker",
-//      Secret.SchemaFlags.NONE,
-//      "api-token", Secret.SchemaAttributeType.STRING);
-
-//  Secret.password_store_sync(schema, null, "Kimai API token",
-//                             api_token, null,
-//                             "api-token", "kimai", null);
-
-//  var token = Secret.password_lookup_sync(schema, null,
-//                                          "api-token", "kimai", null);
-
-// TODO
-// - API token storage (see code example above)
-// - settings UI
-// - make sure displaying customer/task/project/description works
-// - update settings values
-// - proper warnings
-
 public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Label label_customer;
     private Gtk.Label label_project;
@@ -53,7 +35,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Button button_new;
     private Gtk.Button button_settings;
 
-    private Gtk.ComboBoxText combobox_costumer;
+    private Gtk.ComboBoxText combobox_customer;
     private Gtk.ComboBoxText combobox_project;
     private Gtk.ComboBoxText combobox_task;
     private Gtk.Entry entry_description;
@@ -85,9 +67,8 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             Secret.SchemaAttributeType.STRING
         );
 
+        string base_url = settings?.get_string("kimai-api-baseurl") ?? "";
         string api_token = lookup_api_token() ?? "";
-        api = new KimaiAPI("https://demo.kimai.org/api", api_token);
-        timer_manager = new KimaiTimerManager(api);
 
         var vbox = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
         vbox.set_margin_top(6);
@@ -99,6 +80,16 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         warning_box = build_warning_box();
         vbox.pack_start(warning_box, false, false, 0);
+
+        api = new KimaiAPI(base_url, api_token);
+        timer_manager = new KimaiTimerManager(api);
+
+        try {
+            api.validate_connection();
+            hide_warning()
+        } catch (GLib.Error e) {
+            show_warning("%s".printf(e.message));
+        }
 
         main_view = build_main_view();
         form_view = build_form_view();
@@ -253,9 +244,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         var label_description_title = new Gtk.Label("Description:");
         label_description_title.set_halign(Gtk.Align.END);
 
-        combobox_costumer = new Gtk.ComboBoxText();
-        combobox_costumer.set_hexpand(true);
-        combobox_costumer.set_halign(Gtk.Align.FILL);
+        combobox_customer = new Gtk.ComboBoxText();
+        combobox_customer.set_hexpand(true);
+        combobox_customer.set_halign(Gtk.Align.FILL);
         combobox_project = new Gtk.ComboBoxText();
         combobox_project.set_hexpand(true);
         combobox_project.set_halign(Gtk.Align.FILL);
@@ -269,16 +260,16 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         try {
             var customers = api.list_customers();
             foreach (var customer in customers) {
-                combobox_costumer.append(customer.id.to_string(), customer.name);
+                combobox_customer.append(customer.id.to_string(), customer.name);
             }
         } catch (GLib.Error e) {
             show_warning("Could not fetch customers: %s".printf(e.message));
         }
 
-        combobox_costumer.changed.connect(() => {
+        combobox_customer.changed.connect(() => {
             combobox_project.remove_all();
             combobox_task.remove_all();
-            var customer_id_str = combobox_costumer.get_active_id();
+            var customer_id_str = combobox_customer.get_active_id();
             if (customer_id_str != null) {
                 int customer_id = int.parse(customer_id_str);
                 try {
@@ -309,7 +300,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         });
 
         grid.attach(label_customer_title, 0, 0, 1, 1);
-        grid.attach(combobox_costumer, 1, 0, 1, 1);
+        grid.attach(combobox_customer, 1, 0, 1, 1);
         grid.attach(label_project_title, 0, 1, 1, 1);
         grid.attach(combobox_project, 1, 1, 1, 1);
         grid.attach(label_task_title, 0, 2, 1, 1);
@@ -354,11 +345,13 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         var label_apitoken_title = new Gtk.Label("API Token:");
         label_apitoken_title.set_halign(Gtk.Align.END);
 
+        string current_base_url = settings?.get_string("kimai-api-baseurl") ?? "";
+        string current_api_token = lookup_api_token() ?? "";
+
         var entry_baseurl = new Gtk.Entry();
         entry_baseurl.set_hexpand(true);
         entry_baseurl.set_halign(Gtk.Align.FILL);
-
-        string current_api_token = lookup_api_token() ?? "";
+        entry_baseurl.set_text(current_base_url);
 
         var entry_apitoken = new Gtk.Entry();
         entry_apitoken.set_hexpand(true);
@@ -379,12 +372,22 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.pack_end(hbox_buttons, false, false, 0);
 
         button_back.clicked.connect(() => switch_to_main());
-
         button_save.clicked.connect(() => {
-            string new_api_token = entry_apitoken.get_text();
+            string new_base_url = entry_baseurl.get_text() ?? "";
+            string new_api_token = entry_apitoken.get_text() ?? "";
+
+            settings?.set_string("kimai-api-baseurl", new_base_url);
             store_api_token(new_api_token);
 
-            api = new KimaiAPI("https://demo.kimai.org/api", new_api_token);
+            api = new KimaiAPI("base_url", new_api_token);
+
+            try {
+                api.validate_connection();
+                hide_warning()
+            } catch (GLib.Error e) {
+                show_warning("%s".printf(e.message));
+            }
+
             timer_manager.set_api(api);
             timer_manager.refresh_from_server();
 
