@@ -57,8 +57,10 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.ComboBoxText combobox_task;
     private Gtk.Entry entry_description;
 
+    private Gtk.Stack stack;
     private Gtk.Box main_view;
     private Gtk.Box form_view;
+    private Gtk.Box settings_view;
 
     private Gtk.Box main_warning_box;
     private Gtk.Box form_warning_box;
@@ -86,7 +88,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         main_view = build_main_view();
         form_view = build_form_view();
-        vbox.add(main_view);
+        settings_view = build_settings_view();
+
+        stack = new Gtk.Stack();
+        stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT);
+        stack.set_transition_duration(250);
+        stack.add_named(main_view, "main");
+        stack.add_named(form_view, "form");
+        stack.add_named(settings_view, "settings");
+        vbox.add(stack);
 
         timer_manager.updated.connect(update_labels);
         timer_manager.stopped.connect(() => label_duration.set_text("-"));
@@ -203,6 +213,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         });
         button_stop.clicked.connect(() => timer_manager.stop_timer());
         button_new.clicked.connect(() => switch_to_form());
+        button_settings.clicked.connect(() => switch_to_settings());
 
         return box;
     }
@@ -307,18 +318,52 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         return box;
     }
 
-    private void switch_to_form() {
-        var parent = (Gtk.Box) main_view.get_parent();
-        parent.remove(main_view);
-        parent.add(form_view);
-        this.show_all();
+    private Gtk.Box build_settings_view() {
+        var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
+
+        var grid = new Gtk.Grid();
+        grid.set_row_spacing(6);
+        grid.set_column_spacing(6);
+
+        var label_baseurl_title = new Gtk.Label("Base URL:");
+        label_baseurl_title.set_halign(Gtk.Align.END);
+        var label_apitoken_title = new Gtk.Label("API Token:");
+        label_apitoken_title.set_halign(Gtk.Align.END);
+
+        var entry_baseurl = new Gtk.Entry();
+        var entry_apitoken = new Gtk.Entry();
+
+        grid.attach(label_baseurl_title, 0, 0, 1, 1);
+        grid.attach(entry_baseurl, 1, 0, 1, 1);
+        grid.attach(label_apitoken_title, 0, 1, 1, 1);
+        grid.attach(entry_apitoken, 1, 1, 1, 1);
+        box.add(grid);
+
+        var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
+        var button_save = new Gtk.Button.with_label("Save");
+        var button_back = new Gtk.Button.with_label("Back");
+        vbox_bottom.add(button_save);
+        vbox_bottom.add(button_back);
+        box.add(vbox_bottom);
+
+        button_back.clicked.connect(() => switch_to_main());
+        button_save.clicked.connect(() => {
+            switch_to_main();
+        });
+
+        return box;
     }
 
     private void switch_to_main() {
-        var parent = (Gtk.Box) form_view.get_parent();
-        parent.remove(form_view);
-        parent.add(main_view);
-        this.show_all();
+        stack.set_visible_child_name("main");
+    }
+
+    private void switch_to_form() {
+        stack.set_visible_child_name("form");
+    }
+
+    private void switch_to_settings() {
+        stack.set_visible_child_name("settings");
     }
 
     private void update_labels() {
