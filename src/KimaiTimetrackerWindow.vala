@@ -20,6 +20,7 @@
 using GLib;
 using Gdk;
 using Gtk;
+using Secret;
 using Budgie;
 
 //  var schema = new Secret.Schema ("io.grnbk.kimaitimetracker",
@@ -68,6 +69,8 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private KimaiAPI api;
     private KimaiTimerManager timer_manager;
 
+    private Secret.Schema api_token_schema;
+
     private unowned GLib.Settings? settings;
 
     public KimaiTimetrackerWindow(Gtk.Widget? c_parent, GLib.Settings? c_settings) {
@@ -75,7 +78,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         settings = c_settings;
         get_style_context().add_class("kimaitimetracker-popover");
 
-        api = new KimaiAPI("https://demo.kimai.org/api", "8e981f387f8d7a1931790cc26");
+        api_token_schema = new Secret.Schema (
+            "io.grnbk.kimaitimetracker",
+            Secret.SchemaFlags.NONE,
+            "api-token",
+            Secret.SchemaAttributeType.STRING
+        );
+
+        string api_token = lookup_api_token() ?? "";
+        api = new KimaiAPI("https://demo.kimai.org/api", api_token);
         timer_manager = new KimaiTimerManager(api);
 
         var vbox = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
@@ -160,7 +171,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.pack_start(label_box, true, true, 0);
 
         box.hide();
-        
+
         return box;
     }
 
@@ -260,7 +271,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             foreach (var customer in customers) {
                 combobox_costumer.append(customer.id.to_string(), customer.name);
             }
-        } catch (Error e) {
+        } catch (GLib.Error e) {
             show_warning("Could not fetch customers: %s".printf(e.message));
         }
 
@@ -275,7 +286,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                     foreach (var project in projects) {
                         combobox_project.append(project.id.to_string(), project.name);
                     }
-                } catch (Error e) {
+                } catch (GLib.Error e) {
                     show_warning("Could not fetch projects: %s".printf(e.message));
                 }
             }
@@ -291,7 +302,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                     foreach (var activity in activities) {
                         combobox_task.append(activity.id.to_string(), activity.name);
                     }
-                } catch (Error e) {
+                } catch (GLib.Error e) {
                     show_warning("Could not fetch activities: %s".printf(e.message));
                 }
             }
@@ -346,9 +357,13 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         var entry_baseurl = new Gtk.Entry();
         entry_baseurl.set_hexpand(true);
         entry_baseurl.set_halign(Gtk.Align.FILL);
+
+        string current_api_token = lookup_api_token() ?? "";
+
         var entry_apitoken = new Gtk.Entry();
         entry_apitoken.set_hexpand(true);
         entry_apitoken.set_halign(Gtk.Align.FILL);
+        entry_apitoken.set_text(current_api_token);
 
         grid.attach(label_baseurl_title, 0, 0, 1, 1);
         grid.attach(entry_baseurl, 1, 0, 1, 1);
@@ -363,10 +378,16 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         hbox_buttons.add(button_save);
         box.pack_end(hbox_buttons, false, false, 0);
 
-        button_back.clicked.connect(() => {
-            switch_to_main();
-        });
+        button_back.clicked.connect(() => switch_to_main());
+
         button_save.clicked.connect(() => {
+            string new_api_token = entry_apitoken.get_text();
+            store_api_token(new_api_token);
+
+            api = new KimaiAPI("https://demo.kimai.org/api", new_api_token);
+            timer_manager.set_api(api);
+            timer_manager.refresh_from_server();
+
             switch_to_main();
         });
 
@@ -404,5 +425,37 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
     private void hide_warning() {
         warning_box.hide();
+    }
+
+    private string? lookup_api_token() {
+        try {
+            return Secret.password_lookup_sync(
+                api_token_schema,
+                null,
+                "api-token",
+                "kimai",
+                null
+            );
+        } catch (GLib.Error e) {
+            warning("Could not read API token: %s", e.message);
+            return null;
+        }
+    }
+
+    private void store_api_token(string token) {
+        try {
+            Secret.password_store_sync(
+                api_token_schema,
+                null,
+                "Kimai API token",
+                token,
+                null,
+                "api-token",
+                "kimai",
+                null
+            );
+        } catch (GLib.Error e) {
+            show_warning("Could not store API token: %s".printf(e.message));
+        }
     }
 }

@@ -53,6 +53,10 @@ public class KimaiTimerManager : GLib.Object {
         });
     }
 
+    public void set_api(KimaiAPI api) {
+        this.api = api;
+    }
+
     public void refresh_from_server() {
         try {
             var active = api.list_active_timesheets();
