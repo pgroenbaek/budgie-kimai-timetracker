@@ -62,8 +62,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Box form_view;
     private Gtk.Box settings_view;
 
-    private Gtk.Box main_warning_box;
-    private Gtk.Box form_warning_box;
+    private Gtk.Box warning_box;
 
     private KimaiAPI api;
     private KimaiTimerManager timer_manager;
@@ -85,6 +84,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox.set_margin_end(6);
         vbox.set_size_request(300, -1);
         add(vbox);
+
+        warning_box = build_warning_box();
+        vbox.pack_start(warning_box, false, false, 0);
 
         main_view = build_main_view();
         form_view = build_form_view();
@@ -153,9 +155,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Box build_main_view() {
         var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
 
-        main_warning_box = build_warning_box();
-        box.pack_start(main_warning_box, false, false, 0);
-
         var label_customer_title = new Gtk.Label("Customer:");
         label_customer_title.set_halign(Gtk.Align.END);
         var label_project_title = new Gtk.Label("Project:");
@@ -221,9 +220,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Box build_form_view() {
         var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
 
-        form_warning_box = build_warning_box();
-        box.pack_start(form_warning_box, false, false, 0);
-
         var grid = new Gtk.Grid();
         grid.set_row_spacing(6);
         grid.set_column_spacing(6);
@@ -248,7 +244,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                 combobox_costumer.append(customer.id.to_string(), customer.name);
             }
         } catch (Error e) {
-            show_warning("Could not fetch customers: %s".printf(e.message), true);
+            show_warning("Could not fetch customers: %s".printf(e.message));
         }
 
         combobox_costumer.changed.connect(() => {
@@ -263,7 +259,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                         combobox_project.append(project.id.to_string(), project.name);
                     }
                 } catch (Error e) {
-                    show_warning("Could not fetch projects: %s".printf(e.message), true);
+                    show_warning("Could not fetch projects: %s".printf(e.message));
                 }
             }
         });
@@ -279,7 +275,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                         combobox_task.append(activity.id.to_string(), activity.name);
                     }
                 } catch (Error e) {
-                    show_warning("Could not fetch activities: %s".printf(e.message), true);
+                    show_warning("Could not fetch activities: %s".printf(e.message));
                 }
             }
         });
@@ -390,18 +386,16 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         return null;
     }
 
-    private void show_warning(string message, bool in_form = false) {
-        Gtk.Box box = in_form ? form_warning_box : main_warning_box;
-        var label = get_warning_label(box);
+    private void show_warning(string message) {
+        var label = get_warning_label(warning_box);
         if (label != null) {
             label.set_text(message);
             label.get_style_context().add_class("warning");
-            box.show();
+            warning_box.show();
         }
     }
 
-    private void hide_warning(bool in_form = false) {
-        Gtk.Box box = in_form ? form_warning_box : main_warning_box;
-        box.hide();
+    private void hide_warning() {
+        warning_box.hide();
     }
 }
