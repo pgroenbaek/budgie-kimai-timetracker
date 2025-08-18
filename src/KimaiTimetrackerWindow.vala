@@ -62,6 +62,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Box form_view;
     private Gtk.Box settings_view;
 
+    private Gtk.Label warning_label;
     private Gtk.Box warning_box;
 
     private KimaiAPI api;
@@ -129,7 +130,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Box build_warning_box() {
         var css_provider = new Gtk.CssProvider();
         css_provider.load_from_data(".warning { color: #f27835; }");
-
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(),
             css_provider,
@@ -137,18 +137,30 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         );
 
         var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-        box.set_halign(Gtk.Align.START);
+        box.set_halign(Gtk.Align.FILL);
+        box.set_valign(Gtk.Align.START);
 
         var icon = new Gtk.Image.from_icon_name("dialog-warning-symbolic", Gtk.IconSize.BUTTON);
         icon.get_style_context().add_class("warning");
         box.pack_start(icon, false, false, 0);
 
-        var label = new Gtk.Label(null);
-        label.set_halign(Gtk.Align.START);
-        label.set_justify(Gtk.Justification.LEFT);
-        box.pack_start(label, true, true, 0);
+        warning_label = new Gtk.Label("");
+        warning_label.set_line_wrap(true);
+        warning_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR);
+        warning_label.set_xalign(0.0f);
+        warning_label.set_halign(Gtk.Align.FILL);
+        warning_label.set_valign(Gtk.Align.START);
+        warning_label.set_hexpand(true);
+        warning_label.get_style_context().add_class("warning");
+
+        var label_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
+        label_box.set_hexpand(true);
+        label_box.set_halign(Gtk.Align.FILL);
+        label_box.pack_start(warning_label, true, true, 0);
+        box.pack_start(label_box, true, true, 0);
 
         box.hide();
+        
         return box;
     }
 
@@ -193,18 +205,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.add(grid);
 
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-        button_start = create_icon_button("media-playback-start-symbolic", "Start");
-        button_stop = create_icon_button("media-playback-stop-symbolic", "Stop");
+        button_start = create_icon_button("media-playback-start-symbolic", "Start Timer");
+        button_stop = create_icon_button("media-playback-stop-symbolic", "Stop Timer");
         button_new = create_icon_button("list-add-symbolic", "New Timer");
+        button_settings = create_icon_button("emblem-system-symbolic", "Settings");
         hbox_buttons.add(button_start);
         hbox_buttons.add(button_stop);
         hbox_buttons.add(button_new);
-        box.add(hbox_buttons);
-
-        var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
-        button_settings = create_icon_button("emblem-system-symbolic", "Settings");
-        vbox_bottom.add(button_settings);
-        box.add(vbox_bottom);
+        hbox_buttons.add(button_settings);
+        box.pack_end(hbox_buttons, false, false, 0);
 
         button_start.clicked.connect(() => {
             if (timer_manager.active_timesheet == null) switch_to_form();
@@ -234,9 +243,17 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         label_description_title.set_halign(Gtk.Align.END);
 
         combobox_costumer = new Gtk.ComboBoxText();
+        combobox_costumer.set_hexpand(true);
+        combobox_costumer.set_halign(Gtk.Align.FILL);
         combobox_project = new Gtk.ComboBoxText();
+        combobox_project.set_hexpand(true);
+        combobox_project.set_halign(Gtk.Align.FILL);
         combobox_task = new Gtk.ComboBoxText();
+        combobox_task.set_hexpand(true);
+        combobox_task.set_halign(Gtk.Align.FILL);
         entry_description = new Gtk.Entry();
+        entry_description.set_hexpand(true);
+        entry_description.set_halign(Gtk.Align.FILL);
 
         try {
             var customers = api.list_customers();
@@ -290,12 +307,12 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         grid.attach(entry_description, 1, 3, 1, 1);
         box.add(grid);
 
-        var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
-        var button_start_new = new Gtk.Button.with_label("Start Timer");
-        var button_back = new Gtk.Button.with_label("Back");
-        vbox_bottom.add(button_start_new);
-        vbox_bottom.add(button_back);
-        box.add(vbox_bottom);
+        var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
+        var button_back = create_icon_button("go-previous-symbolic", "Back");
+        var button_start_new = create_icon_button("media-playback-start-symbolic", "Start Timer");
+        hbox_buttons.add(button_back);
+        hbox_buttons.add(button_start_new);
+        box.pack_end(hbox_buttons, false, false, 0);
 
         button_back.clicked.connect(() => switch_to_main());
         button_start_new.clicked.connect(() => {
@@ -327,7 +344,11 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         label_apitoken_title.set_halign(Gtk.Align.END);
 
         var entry_baseurl = new Gtk.Entry();
+        entry_baseurl.set_hexpand(true);
+        entry_baseurl.set_halign(Gtk.Align.FILL);
         var entry_apitoken = new Gtk.Entry();
+        entry_apitoken.set_hexpand(true);
+        entry_apitoken.set_halign(Gtk.Align.FILL);
 
         grid.attach(label_baseurl_title, 0, 0, 1, 1);
         grid.attach(entry_baseurl, 1, 0, 1, 1);
@@ -335,14 +356,16 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         grid.attach(entry_apitoken, 1, 1, 1, 1);
         box.add(grid);
 
-        var vbox_bottom = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
-        var button_save = new Gtk.Button.with_label("Save");
-        var button_back = new Gtk.Button.with_label("Back");
-        vbox_bottom.add(button_save);
-        vbox_bottom.add(button_back);
-        box.add(vbox_bottom);
+        var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
+        var button_back = create_icon_button("go-previous-symbolic", "Back");
+        var button_save = create_icon_button("document-save-symbolic", "Save");
+        hbox_buttons.add(button_back);
+        hbox_buttons.add(button_save);
+        box.pack_end(hbox_buttons, false, false, 0);
 
-        button_back.clicked.connect(() => switch_to_main());
+        button_back.clicked.connect(() => {
+            switch_to_main();
+        });
         button_save.clicked.connect(() => {
             switch_to_main();
         });
@@ -374,25 +397,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         label_duration.set_text("%d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
     }
 
-    private Gtk.Label? get_warning_label(Gtk.Box warning_box) {
-        var children = warning_box.get_children();
-        if (children != null) {
-            unowned GLib.List<weak Gtk.Widget> node = children;
-            while (node.next != null) {
-                node = node.next;
-            }
-            return node.data as Gtk.Label;
-        }
-        return null;
-    }
-
     private void show_warning(string message) {
-        var label = get_warning_label(warning_box);
-        if (label != null) {
-            label.set_text(message);
-            label.get_style_context().add_class("warning");
-            warning_box.show();
-        }
+        warning_label.set_text(message);
+        warning_box.show();
     }
 
     private void hide_warning() {
