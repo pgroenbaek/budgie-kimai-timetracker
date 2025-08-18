@@ -86,7 +86,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         try {
             api.validate_connection();
-            hide_warning()
+            hide_warning();
         } catch (GLib.Error e) {
             show_warning("%s".printf(e.message));
         }
@@ -311,7 +311,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
         var button_back = create_icon_button("go-previous-symbolic", "Back");
-        var button_start_new = create_icon_button("media-playback-start-symbolic", "Start Timer");
+        var button_start_new = create_icon_button("media-playback-start-symbolic", "Start New Timer");
         hbox_buttons.add(button_back);
         hbox_buttons.add(button_start_new);
         box.pack_end(hbox_buttons, false, false, 0);
@@ -379,11 +379,11 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             settings?.set_string("kimai-api-baseurl", new_base_url);
             store_api_token(new_api_token);
 
-            api = new KimaiAPI("base_url", new_api_token);
+            api = new KimaiAPI(new_base_url, new_api_token);
 
             try {
                 api.validate_connection();
-                hide_warning()
+                hide_warning();
             } catch (GLib.Error e) {
                 show_warning("%s".printf(e.message));
             }

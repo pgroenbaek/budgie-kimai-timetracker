@@ -55,6 +55,7 @@ public class KimaiTimerManager : GLib.Object {
 
     public void set_api(KimaiAPI api) {
         this.api = api;
+        refresh_from_server();
     }
 
     public void refresh_from_server() {

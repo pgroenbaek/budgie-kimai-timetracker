@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
 using Soup;
 using Json;
 using GLib;
@@ -27,10 +28,12 @@ public class KimaiAPI : GLib.Object {
     private bool is_connection_valid = false;
 
     public KimaiAPI(string base_url, string api_token) {
-        if (base_url.has_suffix("/"))
-            this.base_url = base_url.chomp();
-        else
+        if (base_url.has_suffix("/")) {
+            this.base_url = base_url.substring(0, base_url.length - 1);
+        }
+        else {
             this.base_url = base_url;
+        }
 
         this.session = new Soup.Session();
         this.auth_header = "Bearer " + api_token;
@@ -41,7 +44,7 @@ public class KimaiAPI : GLib.Object {
             GLib.Uri.parse(base_url, GLib.UriFlags.NONE);
         } catch (GLib.Error e) {
             is_connection_valid = false;
-            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings).");
+            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings)." + base_url);
         }
 
         var message = new Soup.Message("GET", base_url + "/customers");
@@ -61,63 +64,6 @@ public class KimaiAPI : GLib.Object {
                 "API validation failed: %d %s".printf((int) message.status_code, message.reason_phrase)
             );
         }
-    }
-
-    private KimaiTimesheet empty_timesheet() {
-        var ts = new KimaiTimesheet();
-        ts.id = 0;
-        ts.description = "";
-        ts.begin = new DateTime.now();
-        ts.end = null;
-
-        ts.project = new KimaiProject();
-        ts.project.id = 0;
-        ts.project.name = "";
-        ts.project.customer = new KimaiCustomer();
-        ts.project.customer.id = 0;
-        ts.project.customer.name = "";
-
-        ts.activity = new KimaiActivity();
-        ts.activity.id = 0;
-        ts.activity.name = "";
-
-        return ts;
-    }
-
-    private List<KimaiCustomer> empty_customers() {
-        var list = new List<KimaiCustomer>();
-        var c = new KimaiCustomer();
-        c.id = 0;
-        c.name = "";
-        list.append(c);
-        return list;
-    }
-
-    private List<KimaiProject> empty_projects() {
-        var list = new List<KimaiProject>();
-        var p = new KimaiProject();
-        p.id = 0;
-        p.name = "";
-        p.customer = new KimaiCustomer();
-        p.customer.id = 0;
-        p.customer.name = "";
-        list.append(p);
-        return list;
-    }
-
-    private List<KimaiActivity> empty_activities() {
-        var list = new List<KimaiActivity>();
-        var a = new KimaiActivity();
-        a.id = 0;
-        a.name = "";
-        list.append(a);
-        return list;
-    }
-
-    private List<KimaiTimesheet> empty_timesheets() {
-        var list = new List<KimaiTimesheet>();
-        list.append(empty_timesheet());
-        return list;
     }
 
     private string request(string method, string endpoint, string? body = null) throws GLib.Error {
@@ -147,7 +93,7 @@ public class KimaiAPI : GLib.Object {
         return (string) message.response_body.data;
     }
 
-    private List<KimaiCustomer> parse_customers(string json_str) throws Error {
+    private List<KimaiCustomer> parse_customers(string json_str) throws GLib.Error {
         var parser = new Json.Parser();
         parser.load_from_data(json_str, -1);
         var arr = parser.get_root().get_array();
@@ -164,7 +110,7 @@ public class KimaiAPI : GLib.Object {
         return result;
     }
 
-    private List<KimaiProject> parse_projects(string json_str) throws Error {
+    private List<KimaiProject> parse_projects(string json_str) throws GLib.Error {
         var parser = new Json.Parser();
         parser.load_from_data(json_str, -1);
         var arr = parser.get_root().get_array();
@@ -189,7 +135,7 @@ public class KimaiAPI : GLib.Object {
         return result;
     }
 
-    private List<KimaiActivity> parse_activities(string json_str) throws Error {
+    private List<KimaiActivity> parse_activities(string json_str) throws GLib.Error {
         var parser = new Json.Parser();
         parser.load_from_data(json_str, -1);
         var arr = parser.get_root().get_array();
@@ -206,7 +152,7 @@ public class KimaiAPI : GLib.Object {
         return result;
     }
 
-    private List<KimaiTimesheet> parse_timesheets(string json_str) throws Error {
+    private List<KimaiTimesheet> parse_timesheets(string json_str) throws GLib.Error {
         var parser = new Json.Parser();
         parser.load_from_data(json_str, -1);
         var arr = parser.get_root().get_array();
@@ -251,14 +197,14 @@ public class KimaiAPI : GLib.Object {
         return result;
     }
 
-    public List<KimaiCustomer> list_customers() throws Error {
-        if (!is_connection_valid) return empty_customers();
+    public List<KimaiCustomer> list_customers() throws GLib.Error {
+        if (!is_connection_valid) return new List<KimaiCustomer>();
 
         return parse_customers(request("GET", "/customers"));
     }
 
-    public List<KimaiProject> list_projects(int? customer_id = null) throws Error {
-        if (!is_connection_valid) return empty_projects();
+    public List<KimaiProject> list_projects(int? customer_id = null) throws GLib.Error {
+        if (!is_connection_valid) return new List<KimaiProject>();
 
         string endpoint = "/projects";
         if (customer_id != null)
@@ -267,8 +213,8 @@ public class KimaiAPI : GLib.Object {
         return parse_projects(request("GET", endpoint));
     }
 
-    public List<KimaiActivity> list_activities(int? project_id = null) throws Error {
-        if (!is_connection_valid) return empty_activities();
+    public List<KimaiActivity> list_activities(int? project_id = null) throws GLib.Error {
+        if (!is_connection_valid) return new List<KimaiActivity>();
 
         string endpoint = "/activities";
         if (project_id != null)
@@ -277,14 +223,14 @@ public class KimaiAPI : GLib.Object {
         return parse_activities(request("GET", endpoint));
     }
 
-    public List<KimaiTimesheet> list_active_timesheets() throws Error {
-        if (!is_connection_valid) return empty_timesheets();
+    public List<KimaiTimesheet> list_active_timesheets() throws GLib.Error {
+        if (!is_connection_valid) return new List<KimaiTimesheet>();
 
         return parse_timesheets(request("GET", "/timesheets?active=1"));
     }
 
-    public KimaiTimesheet start_timer(int project_id, int activity_id, string description) throws Error {
-        if (!is_connection_valid) return empty_timesheet();
+    public KimaiTimesheet? start_timer(int project_id, int activity_id, string description) throws GLib.Error {
+        if (!is_connection_valid) return null;
 
         string json_body = "{ \"project\": %d, \"activity\": %d, \"description\": \"%s\" }"
                             .printf(project_id, activity_id, description);
@@ -294,8 +240,8 @@ public class KimaiAPI : GLib.Object {
         return parse_timesheets("[" + response + "]").nth_data(0);
     }
 
-    public KimaiTimesheet stop_timer(int timesheet_id) throws Error {
-        if (!is_connection_valid) return empty_timesheet();
+    public KimaiTimesheet? stop_timer(int timesheet_id) throws GLib.Error {
+        if (!is_connection_valid) return null;
 
         string json_body = "{ \"end\": \"now\" }";
         string url = "/timesheets/%d".printf(timesheet_id);
