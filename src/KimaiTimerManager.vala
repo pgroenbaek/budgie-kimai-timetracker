@@ -60,7 +60,7 @@ public class KimaiTimerManager : GLib.Object {
 
     public void refresh_from_server() {
         try {
-            var active = api.list_active_timesheets();
+            var active = api.get_active_timesheets();
             if (active != null && active.length() > 0) {
                 active_timesheet = active.nth_data(0);
                 elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());

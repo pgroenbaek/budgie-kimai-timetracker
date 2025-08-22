@@ -274,7 +274,7 @@ public class KimaiAPI : GLib.Object {
         return parse_activity_object(parser.get_root().get_object());
     }
 
-    public List<KimaiTimesheet> list_active_timesheets() throws GLib.Error {
+    public List<KimaiTimesheet> get_active_timesheets() throws GLib.Error {
         if (!is_connection_valid) {
             return new List<KimaiTimesheet>();
         }
