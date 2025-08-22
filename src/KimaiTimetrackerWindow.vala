@@ -104,7 +104,13 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         vbox.add(stack);
 
         timer_manager.updated.connect(update_labels);
-        timer_manager.stopped.connect(() => label_duration.set_text("-"));
+        timer_manager.stopped.connect(() => {
+            label_customer.set_text("N/A");
+            label_project.set_text("N/A");
+            label_task.set_text("N/A");
+            label_description.set_text("N/A");
+            label_duration.set_text("00:00:00");
+        });
         timer_manager.refresh_from_server();
 
         this.show_all();
@@ -180,15 +186,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         var label_description_title = new Gtk.Label("Description:");
         label_description_title.set_halign(Gtk.Align.END);
 
-        label_customer = new Gtk.Label("-");
+        label_customer = new Gtk.Label("N/A");
         label_customer.set_halign(Gtk.Align.START);
-        label_project = new Gtk.Label("-");
+        label_project = new Gtk.Label("N/A");
         label_project.set_halign(Gtk.Align.START);
-        label_task = new Gtk.Label("-");
+        label_task = new Gtk.Label("N/A");
         label_task.set_halign(Gtk.Align.START);
-        label_description = new Gtk.Label("-");
+        label_description = new Gtk.Label("N/A");
         label_description.set_halign(Gtk.Align.START);
-        label_duration = new Gtk.Label("-");
+        label_duration = new Gtk.Label("N/A");
         label_duration.set_halign(Gtk.Align.START);
 
         var grid = new Gtk.Grid();
@@ -257,14 +263,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         entry_description.set_hexpand(true);
         entry_description.set_halign(Gtk.Align.FILL);
 
-        try {
-            var customers = api.list_customers();
-            foreach (var customer in customers) {
-                combobox_customer.append(customer.id.to_string(), customer.name);
-            }
-        } catch (GLib.Error e) {
-            show_warning("Could not fetch customers: %s".printf(e.message));
-        }
+        refresh_comboboxes();
 
         combobox_customer.changed.connect(() => {
             combobox_project.remove_all();
@@ -384,6 +383,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             try {
                 api.validate_connection();
                 hide_warning();
+                refresh_comboboxes();
             } catch (GLib.Error e) {
                 show_warning("%s".printf(e.message));
             }
@@ -409,16 +409,32 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         stack.set_visible_child_name("settings");
     }
 
+    private void refresh_comboboxes() {
+        combobox_customer.remove_all();
+        combobox_project.remove_all();
+        combobox_task.remove_all();
+
+        try {
+            var customers = api.list_customers();
+            foreach (var customer in customers) {
+                combobox_customer.append(customer.id.to_string(), customer.name);
+            }
+        } catch (GLib.Error e) {
+            show_warning("Could not fetch customers: %s".printf(e.message));
+        }
+    }
+
     private void update_labels() {
         label_customer.set_text(timer_manager.customer);
         label_project.set_text(timer_manager.project);
         label_task.set_text(timer_manager.task);
         label_description.set_text(timer_manager.description);
+
         int hours = timer_manager.elapsed_seconds / 3600;
         int minutes = (timer_manager.elapsed_seconds % 3600) / 60;
-        string hour_str = hours == 1 ? "hour" : "hours";
-        string minute_str = minutes == 1 ? "minute" : "minutes";
-        label_duration.set_text("%d %s, %d %s".printf(hours, hour_str, minutes, minute_str));
+        int seconds = timer_manager.elapsed_seconds % 60;
+
+        label_duration.set_text("%02d:%02d:%02d".printf(hours, minutes, seconds));
     }
 
     private void show_warning(string message) {

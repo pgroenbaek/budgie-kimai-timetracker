@@ -31,16 +31,16 @@ public class KimaiTimerManager : GLib.Object {
     private uint refresh_interval_ms = 5 * 1000; // 5 seconds in milliseconds
 
     public string customer {
-        get { return active_timesheet != null ? active_timesheet.project.customer.name : "-"; }
+        get { return active_timesheet != null ? active_timesheet.project.customer.name : "N/A"; }
     }
     public string project {
-        get { return active_timesheet != null ? active_timesheet.project.name : "-"; }
+        get { return active_timesheet != null ? active_timesheet.project.name : "N/A"; }
     }
     public string task {
-        get { return active_timesheet != null ? active_timesheet.activity.name : "-"; }
+        get { return active_timesheet != null ? active_timesheet.activity.name : "N/A"; }
     }
     public string description {
-        get { return active_timesheet != null ? active_timesheet.description : "-"; }
+        get { return active_timesheet != null ? active_timesheet.description : "N/A"; }
     }
 
     public KimaiTimerManager(KimaiAPI api) {
