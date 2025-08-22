@@ -97,85 +97,39 @@ public class KimaiAPI : GLib.Object {
         return (string) message.response_body.data;
     }
 
-    private List<KimaiCustomer> parse_customers(string json_str) throws GLib.Error {
-        var parser = new Json.Parser();
-        parser.load_from_data(json_str, -1);
-        var arr = parser.get_root().get_array();
-        var result = new List<KimaiCustomer>();
-
-        for (uint i = 0; i < arr.get_length(); i++) {
-            var obj = arr.get_element(i).get_object();
-            result.append(new KimaiCustomer() {
-                id = (int) obj.get_int_member("id"),
-                name = obj.get_string_member("name")
-            });
-        }
-
-        return result;
+    private KimaiCustomer parse_customer_object(Json.Object obj) throws GLib.Error {
+        return new KimaiCustomer() {
+            id = (int) obj.get_int_member("id"),
+            name = obj.get_string_member("name")
+        };
     }
 
-    private List<KimaiProject> parse_projects(string json_str) throws GLib.Error {
-        var parser = new Json.Parser();
-        parser.load_from_data(json_str, -1);
-        var arr = parser.get_root().get_array();
-        var result = new List<KimaiProject>();
+    private KimaiProject parse_project_object(Json.Object obj) throws GLib.Error {
+        var project = new KimaiProject() {
+            id = (int) obj.get_int_member("id"),
+            name = obj.get_string_member("name")
+        };
 
-        for (uint i = 0; i < arr.get_length(); i++) {
-            var obj = arr.get_element(i).get_object();
-            var project = new KimaiProject() {
-                id = (int) obj.get_int_member("id"),
-                name = obj.get_string_member("name")
-            };
-
-            if (obj.has_member("customer")) {
-                var customer_node = obj.get_member("customer");
-
-                if (customer_node.get_node_type() == Json.NodeType.OBJECT) {
-                    var customer_obj = obj.get_object_member("customer");
-                    var generator = new Json.Generator();
-                    generator.set_root(customer_obj);
-                    string json_str = "[" + generator.to_data() + "]";
-                    project.customer = parse_customers(json_str).nth_data(0);
-                } else {
-                    var customer_id = (int) obj.get_int_member("customer");
-                    project.customer = get_customer(customer_id);
-                }
+        if (obj.has_member("customer")) {
+            var customer_node = obj.get_member("customer");
+            if (customer_node.get_node_type() == Json.NodeType.OBJECT) {
+                project.customer = parse_customer_object(obj.get_object_member("customer"));
+            } else {
+                project.customer = get_customer((int) obj.get_int_member("customer"));
             }
-
-            result.append(project);
         }
 
-        return result;
+        return project;
     }
 
-    private List<KimaiActivity> parse_activities(string json_str) throws GLib.Error {
-        var parser = new Json.Parser();
-        parser.load_from_data(json_str, -1);
-        var arr = parser.get_root().get_array();
-        var result = new List<KimaiActivity>();
-
-        for (uint i = 0; i < arr.get_length(); i++) {
-            var obj = arr.get_element(i).get_object();
-            result.append(new KimaiActivity() {
-                id = (int) obj.get_int_member("id"),
-                name = obj.get_string_member("name")
-            });
-        }
-
-        return result;
+    private KimaiActivity parse_activity_object(Json.Object obj) {
+        return new KimaiActivity() {
+            id = (int) obj.get_int_member("id"),
+            name = obj.get_string_member("name")
+        };
     }
 
-    private List<KimaiTimesheet> parse_timesheets(string json_str) throws GLib.Error {
-    var parser = new Json.Parser();
-    parser.load_from_data(json_str, -1);
-    var arr = parser.get_root().get_array();
-    var result = new List<KimaiTimesheet>();
-
-    stderr.printf("JSON: %s\n", json_str);
-
-    for (uint i = 0; i < arr.get_length(); i++) {
-        var obj = arr.get_element(i).get_object();
-
+    private KimaiTimesheet parse_timesheet_object(Json.Object obj) throws GLib.Error {
         var timesheet = new KimaiTimesheet();
         timesheet.id = (int) obj.get_int_member("id");
         timesheet.description = obj.get_string_member("description");
@@ -189,43 +143,66 @@ public class KimaiAPI : GLib.Object {
         }
 
         if (obj.has_member("project")) {
-            if (obj.get_member("project").get_node_type() == Json.NodeType.OBJECT) {
-                var project_obj = obj.get_object_member("project");
-                var generator = new Json.Generator();
-                generator.set_root(project_obj);
-                string json_str = "[" + generator.to_data() + "]";
-                timesheet.project = parse_projects(json_str).nth_data(0);
+            var project_node = obj.get_member("project");
+            if (project_node.get_node_type() == Json.NodeType.OBJECT) {
+                timesheet.project = parse_project_object(obj.get_object_member("project"));
             } else {
-                var project_id = (int) obj.get_int_member("project");
-                timesheet.project = get_project(project_id);
+                timesheet.project = get_project((int) obj.get_int_member("project"));
             }
         }
 
         if (obj.has_member("activity")) {
-            if (obj.get_member("activity").get_node_type() == Json.NodeType.OBJECT) {
-                var activity_obj = obj.get_object_member("activity");
-                var generator = new Json.Generator();
-                generator.set_root(activity_obj);
-                string json_str = "[" + generator.to_data() + "]";
-                timesheet.activity = parse_activities(json_str).nth_data(0);
+            var activity_node = obj.get_member("activity");
+            if (activity_node.get_node_type() == Json.NodeType.OBJECT) {
+                timesheet.activity = parse_activity_object(obj.get_object_member("activity"));
             } else {
-                var activity_id = (int) obj.get_int_member("activity");
-                timesheet.activity = get_activity(activity_id);
+                timesheet.activity = get_activity((int) obj.get_int_member("activity"));
             }
         }
 
-        result.append(timesheet);
+        return timesheet;
     }
 
-    return result;
-}
+    private List<KimaiCustomer> parse_customers_array(Json.Array arr) throws GLib.Error {
+        var result = new List<KimaiCustomer>();
+        for (uint i = 0; i < arr.get_length(); i++) {
+            result.append(parse_customer_object(arr.get_element(i).get_object()));
+        }
+        return result;
+    }
+
+    private List<KimaiProject> parse_projects_array(Json.Array arr) throws GLib.Error {
+        var result = new List<KimaiProject>();
+        for (uint i = 0; i < arr.get_length(); i++) {
+            result.append(parse_project_object(arr.get_element(i).get_object()));
+        }
+        return result;
+    }
+
+    private List<KimaiActivity> parse_activities_array(Json.Array arr) throws GLib.Error {
+        var result = new List<KimaiActivity>();
+        for (uint i = 0; i < arr.get_length(); i++) {
+            result.append(parse_activity_object(arr.get_element(i).get_object()));
+        }
+        return result;
+    }
+
+    private List<KimaiTimesheet> parse_timesheets_array(Json.Array arr) throws GLib.Error {
+        var result = new List<KimaiTimesheet>();
+        for (uint i = 0; i < arr.get_length(); i++) {
+            result.append(parse_timesheet_object(arr.get_element(i).get_object()));
+        }
+        return result;
+    }
 
     public List<KimaiCustomer> list_customers() throws GLib.Error {
         if (!is_connection_valid) {
             return new List<KimaiCustomer>();
         }
 
-        return parse_customers(request("GET", "/customers"));
+        var parser = new Json.Parser();
+        parser.load_from_data(request("GET", "/customers"), -1);
+        return parse_customers_array(parser.get_root().get_array());
     }
 
     public List<KimaiProject> list_projects(int? customer_id = null) throws GLib.Error {
@@ -238,7 +215,9 @@ public class KimaiAPI : GLib.Object {
             endpoint += "?customer=" + customer_id.to_string();
         }
 
-        return parse_projects(request("GET", endpoint));
+        var parser = new Json.Parser();
+        parser.load_from_data(request("GET", endpoint), -1);
+        return parse_projects_array(parser.get_root().get_array());
     }
 
     public List<KimaiActivity> list_activities(int? project_id = null) throws GLib.Error {
@@ -251,18 +230,22 @@ public class KimaiAPI : GLib.Object {
             endpoint += "?project=" + project_id.to_string();
         }
 
-        return parse_activities(request("GET", endpoint));
+        var parser = new Json.Parser();
+        parser.load_from_data(request("GET", endpoint), -1);
+        return parse_activities_array(parser.get_root().get_array());
     }
-
+    
     public KimaiCustomer? get_customer(int customer_id) throws GLib.Error {
         if (!is_connection_valid) {
             return null;
         }
 
         string endpoint = "/customers/%d".printf(customer_id);
-        var response = request("GET", endpoint);
+        string response = request("GET", endpoint);
 
-        return parse_customers("[" + response + "]").nth_data(0);
+        var parser = new Json.Parser();
+        parser.load_from_data(response, -1);
+        return parse_customer_object(parser.get_root().get_object());
     }
 
     public KimaiProject? get_project(int project_id) throws GLib.Error {
@@ -271,9 +254,11 @@ public class KimaiAPI : GLib.Object {
         }
 
         string endpoint = "/projects/%d".printf(project_id);
-        var response = request("GET", endpoint);
+        string response = request("GET", endpoint);
 
-        return parse_projects("[" + response + "]").nth_data(0);
+        var parser = new Json.Parser();
+        parser.load_from_data(response, -1);
+        return parse_project_object(parser.get_root().get_object());
     }
 
     public KimaiActivity? get_activity(int activity_id) throws GLib.Error {
@@ -282,9 +267,11 @@ public class KimaiAPI : GLib.Object {
         }
 
         string endpoint = "/activities/%d".printf(activity_id);
-        var response = request("GET", endpoint);
-        
-        return parse_activities("[" + response + "]").nth_data(0);
+        string response = request("GET", endpoint);
+
+        var parser = new Json.Parser();
+        parser.load_from_data(response, -1);
+        return parse_activity_object(parser.get_root().get_object());
     }
 
     public List<KimaiTimesheet> list_active_timesheets() throws GLib.Error {
@@ -292,9 +279,9 @@ public class KimaiAPI : GLib.Object {
             return new List<KimaiTimesheet>();
         }
 
-        string response = request("GET", "/timesheets/active");
-
-        return parse_timesheets(response);
+        var parser = new Json.Parser();
+        parser.load_from_data(request("GET", "/timesheets/active"), -1);
+        return parse_timesheets_array(parser.get_root().get_array());
     }
 
     public KimaiTimesheet? start_timer(int project_id, int activity_id, string description) throws GLib.Error {
@@ -304,10 +291,11 @@ public class KimaiAPI : GLib.Object {
 
         string json_body = "{ \"project\": %d, \"activity\": %d, \"description\": \"%s\" }"
                             .printf(project_id, activity_id, description);
+        string response = request("POST", "/timesheets", json_body);
 
-        var response = request("POST", "/timesheets", json_body);
-
-        return parse_timesheets("[" + response + "]").nth_data(0);
+        var parser = new Json.Parser();
+        parser.load_from_data(response, -1);
+        return parse_timesheet_object(parser.get_root().get_object());
     }
 
     public KimaiTimesheet? stop_timer(int timesheet_id) throws GLib.Error {
@@ -320,10 +308,11 @@ public class KimaiAPI : GLib.Object {
 
         string json_body = "{ \"end\": \"%s\" }".printf(timestamp);
         string url = "/timesheets/%d".printf(timesheet_id);
+        string response = request("PATCH", url, json_body);
 
-        var response = request("PATCH", url, json_body);
-
-        return parse_timesheets("[" + response + "]").nth_data(0);
+        var parser = new Json.Parser();
+        parser.load_from_data(response, -1);
+        return parse_timesheet_object(parser.get_root().get_object());
     }
 }
 
