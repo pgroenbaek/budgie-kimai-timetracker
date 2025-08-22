@@ -122,7 +122,7 @@ public class KimaiAPI : GLib.Object {
         return project;
     }
 
-    private KimaiActivity parse_activity_object(Json.Object obj) {
+    private KimaiActivity parse_activity_object(Json.Object obj) throws GLib.Error {
         return new KimaiActivity() {
             id = (int) obj.get_int_member("id"),
             name = obj.get_string_member("name")
@@ -195,7 +195,7 @@ public class KimaiAPI : GLib.Object {
         return result;
     }
 
-    public List<KimaiCustomer> list_customers() throws GLib.Error {
+    public List<KimaiCustomer> get_customers() throws GLib.Error {
         if (!is_connection_valid) {
             return new List<KimaiCustomer>();
         }
@@ -205,7 +205,7 @@ public class KimaiAPI : GLib.Object {
         return parse_customers_array(parser.get_root().get_array());
     }
 
-    public List<KimaiProject> list_projects(int? customer_id = null) throws GLib.Error {
+    public List<KimaiProject> get_projects(int? customer_id = null) throws GLib.Error {
         if (!is_connection_valid) {
             return new List<KimaiProject>();
         }
@@ -220,7 +220,7 @@ public class KimaiAPI : GLib.Object {
         return parse_projects_array(parser.get_root().get_array());
     }
 
-    public List<KimaiActivity> list_activities(int? project_id = null) throws GLib.Error {
+    public List<KimaiActivity> get_activities(int? project_id = null) throws GLib.Error {
         if (!is_connection_valid) {
             return new List<KimaiActivity>();
         }

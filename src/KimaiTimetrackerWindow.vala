@@ -272,7 +272,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             if (customer_id_str != null) {
                 int customer_id = int.parse(customer_id_str);
                 try {
-                    var projects = api.list_projects(customer_id);
+                    var projects = api.get_projects(customer_id);
                     foreach (var project in projects) {
                         combobox_project.append(project.id.to_string(), project.name);
                     }
@@ -288,7 +288,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             if (project_id_str != null) {
                 int project_id = int.parse(project_id_str);
                 try {
-                    var activities = api.list_activities(project_id);
+                    var activities = api.get_activities(project_id);
                     foreach (var activity in activities) {
                         combobox_task.append(activity.id.to_string(), activity.name);
                     }
@@ -415,7 +415,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         combobox_task.remove_all();
 
         try {
-            var customers = api.list_customers();
+            var customers = api.get_customers();
             foreach (var customer in customers) {
                 combobox_customer.append(customer.id.to_string(), customer.name);
             }
