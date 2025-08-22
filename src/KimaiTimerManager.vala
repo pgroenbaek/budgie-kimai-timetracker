@@ -22,6 +22,7 @@ using GLib;
 public class KimaiTimerManager : GLib.Object {
     private KimaiAPI api;
 
+    public signal void started();
     public signal void updated();
     public signal void stopped();
 
@@ -79,6 +80,7 @@ public class KimaiTimerManager : GLib.Object {
             active_timesheet = api.start_timer(project_id, activity_id, description);
             elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
             start_tick();
+            started();
             updated();
         } catch (Error e) {
             warning("Start failed: %s", e.message);
@@ -90,7 +92,6 @@ public class KimaiTimerManager : GLib.Object {
         try {
             api.stop_timer(active_timesheet.id);
             clear_state();
-            stopped();
         } catch (Error e) {
             warning("Stop failed: %s", e.message);
         }
@@ -98,6 +99,7 @@ public class KimaiTimerManager : GLib.Object {
 
     private void clear_state() {
         stop_tick();
+        stopped();
         active_timesheet = null;
         elapsed_seconds = 0;
     }

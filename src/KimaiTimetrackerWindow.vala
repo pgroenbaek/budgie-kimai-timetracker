@@ -103,8 +103,21 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         stack.add_named(settings_view, "settings");
         vbox.add(stack);
 
+        timer_manager.started.connect(() => {
+            settings?.set_boolean("timetracker-running", true);
+
+            button_start.set_sensitive(false);
+            button_stop.set_sensitive(true);
+            button_new.set_sensitive(false);
+        });
         timer_manager.updated.connect(update_labels);
         timer_manager.stopped.connect(() => {
+            settings?.set_boolean("timetracker-running", false);
+
+            button_start.set_sensitive(true);
+            button_stop.set_sensitive(false);
+            button_new.set_sensitive(true);
+
             label_customer.set_text("N/A");
             label_project.set_text("N/A");
             label_task.set_text("N/A");
@@ -215,6 +228,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
         button_start = create_icon_button("media-playback-start-symbolic", "Start Timer");
         button_stop = create_icon_button("media-playback-stop-symbolic", "Stop Timer");
+        button_stop.set_sensitive(false);
         button_new = create_icon_button("list-add-symbolic", "New Timer");
         button_settings = create_icon_button("emblem-system-symbolic", "Settings");
         hbox_buttons.add(button_start);
