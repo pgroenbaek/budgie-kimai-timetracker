@@ -22,30 +22,68 @@ using GLib;
 public class KimaiTimerManager : GLib.Object {
     private KimaiAPI api;
 
-    public signal void started();
     public signal void updated();
     public signal void stopped();
 
     public KimaiTimesheet? active_timesheet { get; private set; }
+    public KimaiTimesheet? last_timesheet { get; private set; }
     public int elapsed_seconds { get; private set; }
     private uint tick_id = 0;
     private uint refresh_interval_ms = 5 * 1000; // 5 seconds in milliseconds
 
+    private unowned GLib.Settings? settings;
+
     public string customer {
-        get { return active_timesheet != null ? active_timesheet.project.customer.name : "N/A"; }
-    }
-    public string project {
-        get { return active_timesheet != null ? active_timesheet.project.name : "N/A"; }
-    }
-    public string task {
-        get { return active_timesheet != null ? active_timesheet.activity.name : "N/A"; }
-    }
-    public string description {
-        get { return active_timesheet != null ? active_timesheet.description : "N/A"; }
+        get { 
+            if (active_timesheet != null) {
+                return active_timesheet.project.customer.name;
+            }
+            else if (last_timesheet != null) {
+                return last_timesheet.project.customer.name;
+            }
+            return "N/A";
+        }
     }
 
-    public KimaiTimerManager(KimaiAPI api) {
+    public string project {
+        get { 
+            if (active_timesheet != null) {
+                return active_timesheet.project.name;
+            }
+            else if (last_timesheet != null) {
+                return last_timesheet.project.name;
+            }
+            return "N/A";
+        }
+    }
+
+    public string activity {
+        get { 
+            if (active_timesheet != null) {
+                return active_timesheet.activity.name;
+            }
+            else if (last_timesheet != null) {
+                return last_timesheet.activity.name;
+            }
+            return "N/A";
+        }
+    }
+
+    public string description {
+        get { 
+            if (active_timesheet != null) {
+                return active_timesheet.description;
+            }
+            else if (last_timesheet != null) {
+                return last_timesheet.description;
+            }
+            return "N/A";
+        }
+    }
+
+    public KimaiTimerManager(KimaiAPI api, GLib.Settings? c_settings) {
         this.api = api;
+        this.settings = c_settings;
         refresh_from_server();
 
         GLib.Timeout.add(refresh_interval_ms, () => {
@@ -65,6 +103,7 @@ public class KimaiTimerManager : GLib.Object {
             if (active != null && active.length() > 0) {
                 active_timesheet = active.nth_data(0);
                 elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
+                settings.set_boolean("timetracker-running", true);
                 start_tick();
             } else {
                 clear_state();
@@ -79,8 +118,10 @@ public class KimaiTimerManager : GLib.Object {
         try {
             active_timesheet = api.start_timer(project_id, activity_id, description);
             elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
+
+            settings.set_boolean("timetracker-running", true);
+
             start_tick();
-            started();
             updated();
         } catch (Error e) {
             warning("Start failed: %s", e.message);
@@ -100,8 +141,14 @@ public class KimaiTimerManager : GLib.Object {
     private void clear_state() {
         stop_tick();
         stopped();
-        active_timesheet = null;
+        last_timesheet = active_timesheet;
         elapsed_seconds = 0;
+
+        settings.set_boolean("timetracker-running", false);
+        settings.set_int("last-customer", last_timesheet?.project?.customer?.id ?? -1);
+        settings.set_int("last-project", last_timesheet?.project?.id ?? -1);
+        settings.set_int("last-activity", last_timesheet?.activity?.id ?? -1);
+        settings.set_string("last-description", last_timesheet?.description ?? "");
     }
 
     private void start_tick() {

@@ -10,25 +10,25 @@
       <summary>Kimai API base URL</summary>
       <description>The base URL of the Kimai server API (e.g. https://kimai.example.com/api/).</description>
     </key>
-    <key name="active-customer" type="s">
-      <default>''</default>
-      <summary>Active customer</summary>
-      <description>The currently selected customer for the running time entry.</description>
+    <key name="last-customer" type="i">
+      <default>-1</default>
+      <summary>Last customer</summary>
+      <description>The customer id of the last recorded time entry.</description>
     </key>
-    <key name="active-project" type="s">
-      <default>''</default>
-      <summary>Active project</summary>
-      <description>The currently selected project for the running time entry.</description>
+    <key name="last-project" type="i">
+      <default>-1</default>
+      <summary>Last project</summary>
+      <description>The project id of the last recorded time entry.</description>
     </key>
-    <key name="active-task" type="s">
-      <default>''</default>
-      <summary>Active task</summary>
-      <description>The currently selected task for the running time entry.</description>
+    <key name="last-activity" type="i">
+      <default>-1</default>
+      <summary>Last activity</summary>
+      <description>The activity id of the last recorded time entry.</description>
     </key>
     <key name="last-description" type="s">
       <default>''</default>
       <summary>Last entered description</summary>
-      <description>The description of the last recorded time entry. This is remembered so it can be reused easily.</description>
+      <description>The description of the last recorded time entry.</description>
     </key>
   </schema>
 </schemalist>
