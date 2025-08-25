@@ -87,8 +87,10 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         try {
             api.validate_connection();
             hide_warning();
+            settings.set_boolean("warning-persistent", false);
         } catch (GLib.Error e) {
             show_warning("%s".printf(e.message));
+            settings.set_boolean("warning-persistent", true);
         }
 
         main_view = build_main_view();
@@ -113,6 +115,14 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         });
         timer_manager.refresh_from_server();
 
+        this.show.connect(() => {
+            var warning_persistent = settings.get_boolean("warning-persistent");
+            var warning_text = warning_label?.get_text() ?? "";
+
+            if (!warning_persistent || warning_text == null || warning_text == "") {
+                hide_warning();
+            }
+        });
         this.show_all();
     }
 
@@ -406,8 +416,10 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                 api.validate_connection();
                 hide_warning();
                 refresh_combobox_data();
+                settings.set_boolean("warning-persistent", false);
             } catch (GLib.Error e) {
                 show_warning("%s".printf(e.message));
+                settings.set_boolean("warning-persistent", true);
             }
 
             timer_manager.set_api(api);

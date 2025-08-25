@@ -30,5 +30,10 @@
       <summary>Last entered description</summary>
       <description>The description of the last recorded time entry.</description>
     </key>
+    <key name="warning-persistent" type="b">
+      <default>false</default>
+      <summary>Displayed warning persistent</summary>
+      <description>Whether the displayed warning is persistent or not.</description>
+    </key>
   </schema>
 </schemalist>
