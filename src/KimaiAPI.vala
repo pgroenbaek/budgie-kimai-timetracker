@@ -44,7 +44,17 @@ public class KimaiAPI : GLib.Object {
             GLib.Uri.parse(base_url, GLib.UriFlags.NONE);
         } catch (GLib.Error e) {
             is_connection_valid = false;
-            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings)." + base_url);
+            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings).");
+        }
+
+        if (base_url.length < 8 || base_url.substring(0, 8) != "https://") {
+            is_connection_valid = false;
+            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings).");
+        }
+
+        if (base_url.length < 4 || base_url.substring(base_url.length - 4, 4) != "/api") {
+            is_connection_valid = false;
+            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings).");
         }
 
         var message = new Soup.Message("GET", base_url + "/customers");
