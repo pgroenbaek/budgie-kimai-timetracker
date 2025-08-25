@@ -17,9 +17,21 @@ sudo dpkg -i budgie-kimai-timetracker-applet_1.0.0_amd64.deb
 ## Usage
 1. Add the applet to your Budgie panel in the *Budgie Desktop Settings* application.
 
-2. Click the tray icon.
+2. In the Kimai webapp, navigate to _"My Profile" -> "API Access" -> "Create"_ to create an API token.
 
-...
+3. Click the tray icon.
+
+![Applet with Invalid Base URL and Token](./images/InvalidUrlAndToken.png)
+
+4. Go to settings and fill out base URL and API token.
+
+![Adjusting Base URL and API token](./images/AdjustUrlAndToken.png)
+
+5. Now you can create new timers and stop them. The applet will also update its status if you start and stop timers in the Kimai webapp.
+
+![Start New Timer](./images/StartNewTimer.png)
+
+![Timer Started](./images/StartedTimer.png)
 
 
 ## Building
