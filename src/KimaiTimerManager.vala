@@ -22,14 +22,18 @@ using GLib;
 public class KimaiTimerManager : GLib.Object {
     private KimaiAPI api;
 
+    public signal void disconnected();
+    public signal void connected();
     public signal void updated();
     public signal void stopped();
 
     public KimaiTimesheet? active_timesheet { get; private set; }
     public KimaiTimesheet? last_timesheet { get; private set; }
     public int elapsed_seconds { get; private set; }
+
     private uint tick_id = 0;
     private uint refresh_interval_ms = 5 * 1000; // 5 seconds in milliseconds
+    private bool was_connected = true;
 
     private unowned GLib.Settings? settings;
 
@@ -98,44 +102,71 @@ public class KimaiTimerManager : GLib.Object {
     }
 
     public void refresh_from_server() {
-        try {
-            var active = api.get_active_timesheets();
-            if (active != null && active.length() > 0) {
-                active_timesheet = active.nth_data(0);
-                elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
-                settings.set_boolean("timetracker-running", true);
-                start_tick();
-            } else {
-                clear_state();
+        api.get_active_timesheets.begin((obj, res) => {
+            try {
+                var active = api.get_active_timesheets.end(res);
+
+                if (active != null && active.length() > 0) {
+                    active_timesheet = active.nth_data(0);
+                    elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
+
+                    settings.set_boolean("timetracker-running", true);
+
+                    start_tick();
+                } else {
+                    clear_state();
+                }
+
+                updated();
+
+                if (!was_connected) {
+                    connected();
+                    was_connected = true;
+                }
+            } catch (Error e) {
+                if (e.domain == GLib.IOError.quark() ||
+                    e.domain == GLib.ResolverError.quark()) {
+                    warning("No internet connection: %s", e.message);
+                    if (was_connected) {
+                        disconnected();
+                        was_connected = false;
+                    }
+                } else {
+                    warning("Failed to refresh timers: %s", e.message);
+                }
             }
-            updated();
-        } catch (Error e) {
-            warning("Failed to refresh timers: %s", e.message);
-        }
+        });
     }
 
     public void start_timer(int project_id, int activity_id, string description) {
-        try {
-            active_timesheet = api.start_timer(project_id, activity_id, description);
-            elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
+        api.start_timer.begin(project_id, activity_id, description, (obj, res) => {
+            try {
+                active_timesheet = api.start_timer.end(res);
+                elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
 
-            settings.set_boolean("timetracker-running", true);
+                settings.set_boolean("timetracker-running", true);
 
-            start_tick();
-            updated();
-        } catch (Error e) {
-            warning("Start failed: %s", e.message);
-        }
+                start_tick();
+                updated();
+            } catch (Error e) {
+                warning("Start failed: %s", e.message);
+            }
+        });
     }
 
     public void stop_timer() {
-        if (active_timesheet == null) return;
-        try {
-            api.stop_timer(active_timesheet.id);
-            clear_state();
-        } catch (Error e) {
-            warning("Stop failed: %s", e.message);
+        if (active_timesheet == null) {
+            return;
         }
+
+        api.stop_timer.begin(active_timesheet.id, (obj, res) => {
+            try {
+                api.stop_timer.end(res);
+                clear_state();
+            } catch (Error e) {
+                warning("Stop failed: %s", e.message);
+            }
+        });
     }
 
     private void clear_state() {

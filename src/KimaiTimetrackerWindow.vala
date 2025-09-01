@@ -105,6 +105,14 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         stack.add_named(settings_view, "settings");
         vbox.add(stack);
 
+        timer_manager.connected.connect(() => {
+            hide_warning();
+            settings.set_boolean("warning-persistent", false);
+        });
+        timer_manager.disconnected.connect(() => {
+            show_warning("No internet connection");
+            settings.set_boolean("warning-persistent", true);
+        });
         timer_manager.updated.connect(() => {
             update_buttons();
             update_labels();
@@ -297,14 +305,17 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             var customer_id_str = combobox_customer.get_active_id();
             if (customer_id_str != null) {
                 int customer_id = int.parse(customer_id_str);
-                try {
-                    var projects = api.get_projects(customer_id);
-                    foreach (var project in projects) {
-                        combobox_project.append(project.id.to_string(), project.name);
+
+                api.get_projects.begin(customer_id, (obj, res) => {
+                    try {
+                        var projects = api.get_projects.end(res);
+                        foreach (var project in projects) {
+                            combobox_project.append(project.id.to_string(), project.name);
+                        }
+                    } catch (GLib.Error e) {
+                        show_warning("Could not fetch projects: %s".printf(e.message));
                     }
-                } catch (GLib.Error e) {
-                    show_warning("Could not fetch projects: %s".printf(e.message));
-                }
+                });
             }
         });
 
@@ -313,14 +324,17 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             var project_id_str = combobox_project.get_active_id();
             if (project_id_str != null) {
                 int project_id = int.parse(project_id_str);
-                try {
-                    var activities = api.get_activities(project_id);
-                    foreach (var activity in activities) {
-                        combobox_activity.append(activity.id.to_string(), activity.name);
+
+                api.get_activities.begin(project_id, (obj, res) => {
+                    try {
+                        var activities = api.get_activities.end(res);
+                        foreach (var activity in activities) {
+                            combobox_activity.append(activity.id.to_string(), activity.name);
+                        }
+                    } catch (GLib.Error e) {
+                        show_warning("Could not fetch activities: %s".printf(e.message));
                     }
-                } catch (GLib.Error e) {
-                    show_warning("Could not fetch activities: %s".printf(e.message));
-                }
+                });
             }
         });
 
@@ -448,14 +462,16 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         combobox_project.remove_all();
         combobox_activity.remove_all();
 
-        try {
-            var customers = api.get_customers();
-            foreach (var customer in customers) {
-                combobox_customer.append(customer.id.to_string(), customer.name);
+        api.get_customers.begin((obj, res) => {
+            try {
+                var customers = api.get_customers.end(res);
+                foreach (var customer in customers) {
+                    combobox_customer.append(customer.id.to_string(), customer.name);
+                }
+            } catch (GLib.Error e) {
+                show_warning("Could not fetch customers: %s".printf(e.message));
             }
-        } catch (GLib.Error e) {
-            show_warning("Could not fetch customers: %s".printf(e.message));
-        }
+        });
     }
 
     private void update_labels() {
