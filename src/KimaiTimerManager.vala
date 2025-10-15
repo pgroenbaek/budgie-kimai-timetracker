@@ -38,7 +38,7 @@ public class KimaiTimerManager : GLib.Object {
     private unowned GLib.Settings? settings;
 
     public string customer {
-        get { 
+        get {
             if (active_timesheet != null) {
                 return active_timesheet.project.customer.name;
             }
@@ -50,7 +50,7 @@ public class KimaiTimerManager : GLib.Object {
     }
 
     public string project {
-        get { 
+        get {
             if (active_timesheet != null) {
                 return active_timesheet.project.name;
             }
@@ -62,7 +62,7 @@ public class KimaiTimerManager : GLib.Object {
     }
 
     public string activity {
-        get { 
+        get {
             if (active_timesheet != null) {
                 return active_timesheet.activity.name;
             }
@@ -74,7 +74,7 @@ public class KimaiTimerManager : GLib.Object {
     }
 
     public string description {
-        get { 
+        get {
             if (active_timesheet != null) {
                 return active_timesheet.description;
             }
