@@ -11,7 +11,7 @@ Find and download the `.deb` package in the [latest release](https://github.com/
 
 Install using the command:
 ```bash
-sudo dpkg -i budgie-kimai-timetracker-applet_1.0.0_amd64.deb
+sudo dpkg -i budgie-kimai-timetracker-applet_<version>_amd64.deb
 ```
 
 ## Usage
@@ -38,9 +38,10 @@ sudo dpkg -i budgie-kimai-timetracker-applet_1.0.0_amd64.deb
 ### Prerequisites
 Ensure you have the required dependencies installed:
 ```bash
-sudo apt install budgie-desktop budgie-core budgie-core-dev
+sudo apt install budgie-core-dev
+sudo apt install libgtk-3-dev libglib2.0-dev
+sudo apt install libjson-glib-dev libsoup2.4-dev libsecret-1-dev
 sudo apt install meson ninja-build valac
-sudo apt install libgtk-3-dev libglib2.0-dev libjson-glib-dev libsoup2.4-dev libsecret-1-dev
 ```
 
 
@@ -56,5 +57,12 @@ Then build a `.deb` package:
 dpkg-buildpackage -us -uc
 ```
 
+## Contributing
+
+Contributions of all kinds are welcome. These could be suggestions, issues, bug fixes, documentation improvements, or new features.
+
+For more details see the [contribution guidelines](/CONTRIBUTING.md).
+
 ## License
+
 This Budgie panel applet was created by Peter Grønbæk Andersen and is licensed under [GNU GPL v3](/LICENSE).
