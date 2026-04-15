@@ -24,6 +24,7 @@ using Secret;
 using Budgie;
 
 public class KimaiTimetrackerWindow : Budgie.Popover {
+    
     private Gtk.Label label_customer;
     private Gtk.Label label_project;
     private Gtk.Label label_activity;
@@ -131,7 +132,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                 hide_warning();
             }
         });
-        this.show_all();
+        //this.show_all();
     }
 
     private Gtk.Button create_icon_button(string icon_name, string label_text) {
