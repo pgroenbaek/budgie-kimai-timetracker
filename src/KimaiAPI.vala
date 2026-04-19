@@ -248,8 +248,8 @@ public class KimaiAPI : GLib.Object {
         return timesheet;
     }
 
-    private List<KimaiCustomer> parse_customers_array(Json.Array arr) {
-        var result = new List<KimaiCustomer>();
+    private GLib.List<KimaiCustomer> parse_customers_array(Json.Array arr) {
+        var result = new GLib.List<KimaiCustomer>();
 
         for (uint i = 0; i < arr.get_length(); i++) {
             result.append(parse_customer_object(arr.get_element(i).get_object()));
@@ -258,8 +258,8 @@ public class KimaiAPI : GLib.Object {
         return result;
     }
 
-    private List<KimaiProject> parse_projects_array(Json.Array arr) {
-        var result = new List<KimaiProject>();
+    private GLib.List<KimaiProject> parse_projects_array(Json.Array arr) {
+        var result = new GLib.List<KimaiProject>();
 
         for (uint i = 0; i < arr.get_length(); i++) {
             result.append(parse_project_object(arr.get_element(i).get_object()));
@@ -268,8 +268,8 @@ public class KimaiAPI : GLib.Object {
         return result;
     }
 
-    private List<KimaiActivity> parse_activities_array(Json.Array arr) {
-        var result = new List<KimaiActivity>();
+    private GLib.List<KimaiActivity> parse_activities_array(Json.Array arr) {
+        var result = new GLib.List<KimaiActivity>();
 
         for (uint i = 0; i < arr.get_length(); i++) {
             result.append(parse_activity_object(arr.get_element(i).get_object()));
@@ -278,8 +278,8 @@ public class KimaiAPI : GLib.Object {
         return result;
     }
 
-    private List<KimaiTimesheet> parse_timesheets_array(Json.Array arr) {
-        var result = new List<KimaiTimesheet>();
+    private GLib.List<KimaiTimesheet> parse_timesheets_array(Json.Array arr) {
+        var result = new GLib.List<KimaiTimesheet>();
 
         for (uint i = 0; i < arr.get_length(); i++) {
             result.append(parse_timesheet_object(arr.get_element(i).get_object()));
@@ -368,12 +368,12 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (GLib.List<KimaiCustomer>?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, null, message.reason_phrase);
+                result(false, (GLib.List<KimaiCustomer>?) null, message.reason_phrase);
                 return;
             }
 
@@ -384,7 +384,7 @@ public class KimaiAPI : GLib.Object {
 
                 var arr = parser.get_root().get_array();
 
-                var list = new List<KimaiCustomer>();
+                var list = new GLib.List<KimaiCustomer>();
 
                 for (uint i = 0; i < arr.get_length(); i++)
                     list.append(parse_customer_object(arr.get_element(i).get_object()));
@@ -392,7 +392,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, list, null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (GLib.List<KimaiCustomer>?) null, e.message);
             }
         });
     }
@@ -410,12 +410,12 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (GLib.List<KimaiProject>?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, null, message.reason_phrase);
+                result(false, (GLib.List<KimaiProject>?) null, message.reason_phrase);
                 return;
             }
 
@@ -426,7 +426,7 @@ public class KimaiAPI : GLib.Object {
 
                 var arr = parser.get_root().get_array();
 
-                var list = new List<KimaiProject>();
+                var list = new GLib.List<KimaiProject>();
 
                 for (uint i = 0; i < arr.get_length(); i++)
                     list.append(parse_project_object(arr.get_element(i).get_object()));
@@ -434,7 +434,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, list, null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (GLib.List<KimaiProject>?) null, e.message);
             }
         });
     }
@@ -452,12 +452,12 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (GLib.List<KimaiActivity>?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, null, message.reason_phrase);
+                result(false, (GLib.List<KimaiActivity>?) null, message.reason_phrase);
                 return;
             }
 
@@ -467,7 +467,7 @@ public class KimaiAPI : GLib.Object {
 
                 var arr = parser.get_root().get_array();
 
-                var list = new List<KimaiActivity>();
+                var list = new GLib.List<KimaiActivity>();
 
                 for (uint i = 0; i < arr.get_length(); i++)
                     list.append(parse_activity_object(arr.get_element(i).get_object()));
@@ -475,7 +475,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, list, null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (GLib.List<KimaiActivity>?) null, e.message);
             }
         });
     }
@@ -490,12 +490,12 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (KimaiCustomer?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, null, message.reason_phrase);
+                result(false, (KimaiCustomer?) null, message.reason_phrase);
                 return;
             }
 
@@ -509,7 +509,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, parse_customer_object(obj), null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (KimaiCustomer?) null, e.message);
             }
         });
     }
@@ -525,12 +525,12 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (KimaiProject?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, null, message.reason_phrase);
+                result(false, (KimaiProject?) null, message.reason_phrase);
                 return;
             }
 
@@ -544,7 +544,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, parse_project_object(obj), null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (KimaiProject?) null, e.message);
             }
         });
     }
@@ -560,12 +560,12 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (KimaiActivity?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, null, message.reason_phrase);
+                result(false, (KimaiActivity?) null, message.reason_phrase);
                 return;
             }
 
@@ -579,7 +579,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, parse_activity_object(obj), null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (KimaiActivity?) null, e.message);
             }
         });
     }
@@ -592,12 +592,12 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (GLib.List<KimaiTimesheet>?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, null, message.reason_phrase);
+                result(false, (GLib.List<KimaiTimesheet>?) null, message.reason_phrase);
                 return;
             }
 
@@ -608,7 +608,7 @@ public class KimaiAPI : GLib.Object {
 
                 var arr = parser.get_root().get_array();
 
-                var list = new List<KimaiTimesheet>();
+                var list = new GLib.List<KimaiTimesheet>();
 
                 for (uint i = 0; i < arr.get_length(); i++)
                     list.append(parse_timesheet_object(arr.get_element(i).get_object()));
@@ -616,7 +616,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, list, null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (GLib.List<KimaiTimesheet>?) null, e.message);
             }
         });
     }
@@ -633,14 +633,14 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (KimaiTimesheet?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK &&
                 message.status_code != Soup.Status.CREATED)
             {
-                result(false, null, message.reason_phrase);
+                result(false, (KimaiTimesheet?) null, message.reason_phrase);
                 return;
             }
 
@@ -654,7 +654,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, parse_timesheet_object(obj), null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (KimaiTimesheet?) null, e.message);
             }
         });
     }
@@ -672,12 +672,12 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, null, "Network error: Cannot reach server.");
+                result(false, (KimaiTimesheet?) null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, null, message.reason_phrase);
+                result(false, (KimaiTimesheet?) null, message.reason_phrase);
                 return;
             }
 
@@ -691,7 +691,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, parse_timesheet_object(obj), null);
 
             } catch (Error e) {
-                result(false, null, e.message);
+                result(false, (KimaiTimesheet?) null, e.message);
             }
         });
     }

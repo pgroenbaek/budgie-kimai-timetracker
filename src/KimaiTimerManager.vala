@@ -28,7 +28,7 @@ public class KimaiTimerManager : GLib.Object {
     public signal void show_warning(string message, bool persistent = false);
     public signal void hide_warning();
 
-    public delegate void ResultList<T>(bool success, List<T>? items, string? error_message);
+    public delegate void ResultList<T>(bool success, GLib.List<T>? items, string? error_message);
 
     public KimaiTimesheet? active_timesheet { get; private set; }
     public KimaiTimesheet? last_timesheet { get; private set; }
@@ -208,27 +208,27 @@ public class KimaiTimerManager : GLib.Object {
     public void load_customers(owned ResultList<KimaiCustomer> result) {
         api.get_customers((success, customers, error) => {
             if (!success) {
-                result(false, null, error);
+                result(false, (GLib.List<KimaiCustomer>?) null, error);
                 return;
             }
             result(true, customers, null);
         });
     }
 
-    public void load_projects(int customer_id, owned ResultList<KimaiCustomer> result) {
+    public void load_projects(int customer_id, owned ResultList<KimaiProject> result) {
         api.get_projects(customer_id, (success, projects, error) => {
             if (!success) {
-                result(false, null, error);
+                result(false, (GLib.List<KimaiProject>?) null, error);
                 return;
             }
             result(true, projects, null);
         });
     }
 
-    public void load_activities(int project_id, owned ResultList<KimaiCustomer> result) {
+    public void load_activities(int project_id, owned ResultList<KimaiActivity> result) {
         api.get_activities(project_id, (success, activities, error) => {
             if (!success) {
-                result(false, null, error);
+                result(false, (GLib.List<KimaiActivity>?) null, error);
                 return;
             }
             result(true, activities, null);
