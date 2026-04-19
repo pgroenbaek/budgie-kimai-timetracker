@@ -27,7 +27,7 @@ public class KimaiCustomer : GLib.Object {
 public class KimaiProject : GLib.Object {
     public int id { get; set; }
     public string name { get; set; }
-    public KimaiCustomer? customer { get; set; }
+    public int customerId { get; set; }
 }
 
 public class KimaiActivity : GLib.Object {
@@ -40,6 +40,6 @@ public class KimaiTimesheet : GLib.Object {
     public string description { get; set; }
     public DateTime begin { get; set; }
     public DateTime? end { get; set; }
-    public KimaiProject project { get; set; }
-    public KimaiActivity activity { get; set; }
+    public int projectId { get; set; }
+    public int activityId { get; set; }
 }

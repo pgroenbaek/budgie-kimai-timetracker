@@ -28,9 +28,7 @@ public class KimaiTimerManager : GLib.Object {
     public signal void show_warning(string message, bool persistent = false);
     public signal void hide_warning();
 
-    public delegate void CustomersCallback(bool success, List<KimaiCustomer>? customers, string? error);
-    public delegate void ProjectsCallback(bool success, List<KimaiProject>? projects, string? error);
-    public delegate void ActivitiesCallback(bool success, List<KimaiActivity>? activities, string? error);
+    public delegate void ResultList<T>(bool success, List<T>? items, string? error_message);
 
     public KimaiTimesheet? active_timesheet { get; private set; }
     public KimaiTimesheet? last_timesheet { get; private set; }
@@ -38,7 +36,6 @@ public class KimaiTimerManager : GLib.Object {
 
     private uint tick_id = 0;
     private uint refresh_interval_ms = 5 * 1000;
-    private bool was_connected = true;
 
     private unowned GLib.Settings? settings;
 
@@ -111,14 +108,12 @@ public class KimaiTimerManager : GLib.Object {
 
     public void refresh_from_server() {
         api.get_active_timesheets((success, timesheets, error) => {
-
             if (!success) {
                 warning("Failed to refresh timers: %s", error);
                 return;
             }
 
             if (timesheets != null && timesheets.length() > 0) {
-
                 active_timesheet = timesheets.nth_data(0);
 
                 elapsed_seconds =
@@ -210,33 +205,33 @@ public class KimaiTimerManager : GLib.Object {
         }
     }
 
-    public void load_customers(owned CustomersCallback callback) {
+    public void load_customers(owned ResultList<KimaiCustomer> result) {
         api.get_customers((success, customers, error) => {
             if (!success) {
-                callback(false, null, error);
+                result(false, null, error);
                 return;
             }
-            callback(true, customers, null);
+            result(true, customers, null);
         });
     }
 
-    public void load_projects(int customer_id, owned ProjectsCallback callback) {
+    public void load_projects(int customer_id, owned ResultList<KimaiCustomer> result) {
         api.get_projects(customer_id, (success, projects, error) => {
             if (!success) {
-                callback(false, null, error);
+                result(false, null, error);
                 return;
             }
-            callback(true, projects, null);
+            result(true, projects, null);
         });
     }
 
-    public void load_activities(int project_id, owned ActivitiesCallback callback) {
+    public void load_activities(int project_id, owned ResultList<KimaiCustomer> result) {
         api.get_activities(project_id, (success, activities, error) => {
             if (!success) {
-                callback(false, null, error);
+                result(false, null, error);
                 return;
             }
-            callback(true, activities, null);
+            result(true, activities, null);
         });
     }
 }

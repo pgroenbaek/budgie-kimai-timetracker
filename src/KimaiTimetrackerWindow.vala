@@ -49,7 +49,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Label warning_label;
     private Gtk.Box warning_box;
 
-    private KimaiAPI api;
     private KimaiTimerManager timer_manager;
 
     private Secret.Schema api_token_schema;
@@ -430,7 +429,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             string new_base_url = entry_baseurl.get_text() ?? "";
             string new_api_token = entry_apitoken.get_text() ?? "";
 
-            settings?.set_string("kimai-api-baseurl", new_base_url);
             store_api_token(new_api_token);
 
             timer_manager.set_api_info(new_base_url, new_api_token);
