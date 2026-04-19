@@ -22,10 +22,23 @@ using Json;
 using GLib;
 
 public class KimaiAPI : GLib.Object {
+
     private Soup.Session session;
     private string base_url;
     private string auth_header;
-    private bool is_connection_valid = false;
+    private bool connection_valid = false;
+
+    private delegate void RequestCallback(Soup.Session session, Soup.Message msg);
+
+    public delegate void ValidationCallback(bool valid, string? error);
+    public delegate void CustomersCallback(bool success, List<KimaiCustomer>? customers, string? error);
+    public delegate void ProjectsCallback(bool success, List<KimaiProject>? projects, string? error);
+    public delegate void ActivitiesCallback(bool success, List<KimaiActivity>? activities, string? error);
+    public delegate void TimesheetsCallback(bool success, List<KimaiTimesheet>? timesheets, string? error);
+    public delegate void CustomerCallback(bool success, KimaiCustomer? customer, string? error);
+    public delegate void ProjectCallback(bool success, KimaiProject? project, string? error);
+    public delegate void ActivityCallback(bool success, KimaiActivity? activity, string? error);
+    public delegate void TimesheetCallback(bool success, KimaiTimesheet? timesheet, string? error);
 
     public KimaiAPI(string base_url, string api_token) {
         if (base_url.has_suffix("/")) {
@@ -35,433 +48,301 @@ public class KimaiAPI : GLib.Object {
             this.base_url = base_url;
         }
 
-        this.session = new Soup.Session();
-        this.auth_header = "Bearer " + api_token;
+        session = new Soup.Session();
+        auth_header = "Bearer " + api_token;
     }
 
-    public void validate_connection() throws GLib.Error {
-        try {
-            GLib.Uri.parse(base_url, GLib.UriFlags.NONE);
-        } catch (GLib.Error e) {
-            is_connection_valid = false;
-            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings).");
-        }
-
-        if (base_url.length < 8 || base_url.substring(0, 8) != "https://") {
-            is_connection_valid = false;
-            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings).");
-        }
-
-        if (base_url.length < 4 || base_url.substring(base_url.length - 4, 4) != "/api") {
-            is_connection_valid = false;
-            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 1, "Invalid base URL (please adjust it in settings).");
-        }
-
-        var message = new Soup.Message("GET", base_url + "/customers");
-        message.request_headers.append("Authorization", this.auth_header);
-        this.session.send_message(message);
-
-        if (message.status_code == Soup.Status.UNAUTHORIZED) {
-            is_connection_valid = false;
-            throw new GLib.Error(GLib.Quark.from_string("KimaiAPIError"), 2, "Invalid API token (please adjust it in settings).");
-        }
-
-        if (message.status_code == Soup.Status.OK) {
-            is_connection_valid = true;
-            return;
-        }
-
-        is_connection_valid = false;
-        throw new GLib.Error(
-            GLib.Quark.from_string("KimaiAPIError"),
-            (int) message.status_code,
-            "API validation failed: %d %s".printf((int) message.status_code, message.reason_phrase)
-        );
-    }
-
-    private async string request(string method, string endpoint, string? body = null) throws GLib.Error {
-        if (!is_connection_valid) {
-            return "{}";
-        }
-
-        string url = this.base_url + endpoint;
-        var message = new Soup.Message(method, url);
-        message.request_headers.append("Authorization", this.auth_header);
+    private void request(string method, string endpoint, string? body, owned RequestCallback callback) {
+        var message = new Soup.Message(method, base_url + endpoint);
+        message.request_headers.append("Authorization", auth_header);
 
         if (body != null) {
             message.request_headers.append("Content-Type", "application/json");
-            var body_bytes = (uint8[]) body.data;
-            message.set_request("application/json", Soup.MemoryUse.COPY, body_bytes);
+            message.set_request("application/json", Soup.MemoryUse.COPY, (uint8[]) body.data);
         }
 
-        string response = null;
-
-        var loop = new GLib.MainLoop();
-        this.session.queue_message(message, (session, message) => {
-            if (message.status_code != Soup.Status.OK &&
-                message.status_code != Soup.Status.CREATED) 
-            {
-                loop.quit();
-                throw new GLib.Error(
-                    GLib.Quark.from_string("KimaiAPIError"),
-                    (int) message.status_code,
-                    "HTTP request failed: %d %s".printf((int) message.status_code, message.reason_phrase)
-                );
-            }
-
-            response = (string) message.response_body.data;
-            loop.quit();
+        session.queue_message(message, (session, response) => {
+            callback(session, response);
         });
-
-        loop.run();
-        return response;
     }
 
-    private async KimaiCustomer parse_customer_object(Json.Object obj) throws GLib.Error {
+    private string get_json(Soup.Message message) {
+        Soup.Buffer buffer = message.response_body.flatten();
+        return (string) buffer.data;
+    }
+
+    public bool is_connection_valid() {
+        return connection_valid;
+    }
+
+    public void validate_connection(owned ValidationCallback callback) {
+        if (base_url == "") {
+            connection_valid = false;
+            callback(false, "Base URL not set.");
+            return;
+        }
+
+        try {
+            GLib.Uri.parse(base_url, GLib.UriFlags.NONE);
+        } catch (Error e) {
+            connection_valid = false;
+            callback(false, "Invalid base URL.");
+            return;
+        }
+
+        if (!base_url.has_prefix("https://")) {
+            connection_valid = false;
+            callback(false, "Base URL must start with https://");
+            return;
+        }
+
+        if (!base_url.has_suffix("/api")) {
+            connection_valid = false;
+            callback(false, "Base URL must end with /api");
+            return;
+        }
+
+        request("GET", "/customers", null, (session, message) => {
+            if (message.status_code == Soup.Status.UNAUTHORIZED) {
+                connection_valid = false;
+                callback(false, "Invalid API token.");
+                return;
+            }
+
+            if (message.status_code == Soup.Status.OK) {
+                connection_valid = true;
+                callback(true, null);
+                return;
+            }
+
+            connection_valid = false;
+
+            callback(false, "API validation failed: %d %s".printf(
+                (int) message.status_code,
+                message.reason_phrase
+            ));
+        });
+    }
+
+    private KimaiCustomer parse_customer(Json.Object obj) {
         return new KimaiCustomer() {
             id = (int) obj.get_int_member("id"),
             name = obj.get_string_member("name")
         };
     }
 
-    private async KimaiProject parse_project_object(Json.Object obj) throws GLib.Error {
-        var project = new KimaiProject() {
+    private KimaiProject parse_project(Json.Object obj) {
+        return new KimaiProject() {
             id = (int) obj.get_int_member("id"),
             name = obj.get_string_member("name")
         };
-
-        if (obj.has_member("customer")) {
-            var customer_node = obj.get_member("customer");
-            if (customer_node.get_node_type() == Json.NodeType.OBJECT) {
-                project.customer = yield parse_customer_object(obj.get_object_member("customer"));
-            } else {
-                project.customer = yield get_customer((int) obj.get_int_member("customer"));
-            }
-        }
-
-        return project;
     }
 
-    private async KimaiActivity parse_activity_object(Json.Object obj) throws GLib.Error {
+    private KimaiActivity parse_activity(Json.Object obj) {
         return new KimaiActivity() {
             id = (int) obj.get_int_member("id"),
             name = obj.get_string_member("name")
         };
     }
 
-    private async KimaiTimesheet parse_timesheet_object(Json.Object obj) throws GLib.Error {
-        var timesheet = new KimaiTimesheet();
-        timesheet.id = (int) obj.get_int_member("id");
-        timesheet.description = obj.get_string_member("description");
-        timesheet.begin = new DateTime.from_iso8601(obj.get_string_member("begin"), null);
+    private KimaiTimesheet parse_timesheet(Json.Object obj) {
+        var t = new KimaiTimesheet();
+
+        t.id = (int) obj.get_int_member("id");
+        t.description = obj.get_string_member("description");
+        t.begin = new DateTime.from_iso8601(obj.get_string_member("begin"), null);
 
         if (obj.has_member("end")) {
-            var end_str = obj.get_string_member("end");
-            if (end_str != null && end_str.length > 0) {
-                timesheet.end = new DateTime.from_iso8601(end_str, null);
+            var end = obj.get_string_member("end");
+            if (end != null && end != "")
+                t.end = new DateTime.from_iso8601(end, null);
+        }
+
+        if (obj.has_member("project"))
+            t.project = parse_project(obj.get_object_member("project"));
+
+        if (obj.has_member("activity"))
+            t.activity = parse_activity(obj.get_object_member("activity"));
+
+        return t;
+    }
+
+    public void get_customers(owned CustomersCallback callback) {
+        request("GET", "/customers", null, (session, message) => {
+
+            if (message.status_code != Soup.Status.OK) {
+                callback(false, null, message.reason_phrase);
+                return;
             }
-        }
 
-        if (obj.has_member("project")) {
-            var project_node = obj.get_member("project");
-            if (project_node.get_node_type() == Json.NodeType.OBJECT) {
-                timesheet.project = yield parse_project_object(obj.get_object_member("project"));
-            } else {
-                timesheet.project = yield get_project((int) obj.get_int_member("project"));
+            try {
+
+                var parser = new Json.Parser();
+                parser.load_from_data(get_json(message), -1);
+
+                var arr = parser.get_root().get_array();
+
+                var list = new List<KimaiCustomer>();
+
+                for (uint i = 0; i < arr.get_length(); i++)
+                    list.append(parse_customer(arr.get_element(i).get_object()));
+
+                callback(true, list, null);
+
+            } catch (Error e) {
+                callback(false, null, e.message);
             }
-        }
-
-        if (obj.has_member("activity")) {
-            var activity_node = obj.get_member("activity");
-            if (activity_node.get_node_type() == Json.NodeType.OBJECT) {
-                timesheet.activity = yield parse_activity_object(obj.get_object_member("activity"));
-            } else {
-                timesheet.activity = yield get_activity((int) obj.get_int_member("activity"));
-            }
-        }
-
-        return timesheet;
+        });
     }
 
-    private async List<KimaiCustomer> parse_customers_array(Json.Array arr) throws GLib.Error {
-        var result = new List<KimaiCustomer>();
-        for (uint i = 0; i < arr.get_length(); i++) {
-            result.append(yield parse_customer_object(arr.get_element(i).get_object()));
-        }
-        return result;
-    }
-
-    private async List<KimaiProject> parse_projects_array(Json.Array arr) throws GLib.Error {
-        var result = new List<KimaiProject>();
-        for (uint i = 0; i < arr.get_length(); i++) {
-            result.append(yield parse_project_object(arr.get_element(i).get_object()));
-        }
-        return result;
-    }
-
-    private async List<KimaiActivity> parse_activities_array(Json.Array arr) throws GLib.Error {
-        var result = new List<KimaiActivity>();
-        for (uint i = 0; i < arr.get_length(); i++) {
-            result.append(yield parse_activity_object(arr.get_element(i).get_object()));
-        }
-        return result;
-    }
-
-    private async List<KimaiTimesheet> parse_timesheets_array(Json.Array arr) throws GLib.Error {
-        var result = new List<KimaiTimesheet>();
-        for (uint i = 0; i < arr.get_length(); i++) {
-            result.append(yield parse_timesheet_object(arr.get_element(i).get_object()));
-        }
-        return result;
-    }
-
-    public async List<KimaiCustomer> get_customers() throws GLib.Error {
-        if (!is_connection_valid) {
-            return new List<KimaiCustomer>();
-        }
-
-        string response = yield request("GET", "/customers");
-        if (response == null || response.length == 0) {
-            warning("Empty response from /customers");
-            return new List<KimaiCustomer>();
-        }
-
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
-                warning("Invalid JSON structure from /customers");
-                return new List<KimaiCustomer>();
-            }
-            return yield parse_customers_array(root.get_array());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from /customers: %s".printf(e.message));
-            return new List<KimaiCustomer>();
-        }
-    }
-
-    public async List<KimaiProject> get_projects(int? customer_id = null) throws GLib.Error {
-        if (!is_connection_valid) {
-            return new List<KimaiProject>();
-        }
-
+    public void get_projects(int? customer_id, owned ProjectsCallback callback) {
         string endpoint = "/projects";
-        if (customer_id != null) endpoint += "?customer=" + customer_id.to_string();
 
-        string response = yield request("GET", endpoint);
-        if (response == null || response.length == 0) {
-            warning("Empty response from " + endpoint);
-            return new List<KimaiProject>();
-        }
+        if (customer_id != null)
+            endpoint += "?customer=" + customer_id.to_string();
 
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
-                warning("Invalid JSON structure from " + endpoint);
-                return new List<KimaiProject>();
+        request("GET", endpoint, null, (session, message) => {
+
+            if (message.status_code != Soup.Status.OK) {
+                callback(false, null, message.reason_phrase);
+                return;
             }
-            return yield parse_projects_array(root.get_array());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from " + endpoint + ": %s".printf(e.message));
-            return new List<KimaiProject>();
-        }
+
+            try {
+
+                var parser = new Json.Parser();
+                parser.load_from_data(get_json(message), -1);
+
+                var arr = parser.get_root().get_array();
+
+                var list = new List<KimaiProject>();
+
+                for (uint i = 0; i < arr.get_length(); i++)
+                    list.append(parse_project(arr.get_element(i).get_object()));
+
+                callback(true, list, null);
+
+            } catch (Error e) {
+                callback(false, null, e.message);
+            }
+        });
     }
 
-    public async List<KimaiActivity> get_activities(int? project_id = null) throws GLib.Error {
-        if (!is_connection_valid) {
-            return new List<KimaiActivity>();
-        }
-
+    public void get_activities(int? project_id, owned ActivitiesCallback callback) {
         string endpoint = "/activities";
-        if (project_id != null) endpoint += "?project=" + project_id.to_string();
 
-        string response = yield request("GET", endpoint);
-        if (response == null || response.length == 0) {
-            warning("Empty response from " + endpoint);
-            return new List<KimaiActivity>();
-        }
+        if (project_id != null)
+            endpoint += "?project=" + project_id.to_string();
 
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
-                warning("Invalid JSON structure from " + endpoint);
-                return new List<KimaiActivity>();
+        request("GET", endpoint, null, (session, message) => {
+
+            if (message.status_code != Soup.Status.OK) {
+                callback(false, null, message.reason_phrase);
+                return;
             }
-            return yield parse_activities_array(root.get_array());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from " + endpoint + ": %s".printf(e.message));
-            return new List<KimaiActivity>();
-        }
+
+            try {
+
+                var parser = new Json.Parser();
+                parser.load_from_data(get_json(message), -1);
+
+                var arr = parser.get_root().get_array();
+
+                var list = new List<KimaiActivity>();
+
+                for (uint i = 0; i < arr.get_length(); i++)
+                    list.append(parse_activity(arr.get_element(i).get_object()));
+
+                callback(true, list, null);
+
+            } catch (Error e) {
+                callback(false, null, e.message);
+            }
+        });
     }
 
-    public async KimaiCustomer? get_customer(int customer_id) throws GLib.Error {
-        if (!is_connection_valid) {
-            return null;
-        }
+    public void get_active_timesheets(owned TimesheetsCallback callback) {
+        request("GET", "/timesheets/active", null, (session, message) => {
 
-        string endpoint = "/customers/%d".printf(customer_id);
-        string response = yield request("GET", endpoint);
-        if (response == null || response.length == 0) {
-            warning("Empty response from " + endpoint);
-            return null;
-        }
-
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.OBJECT) {
-                warning("Invalid JSON structure from " + endpoint);
-                return null;
+            if (message.status_code != Soup.Status.OK) {
+                callback(false, null, message.reason_phrase);
+                return;
             }
-            return yield parse_customer_object(root.get_object());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from " + endpoint + ": %s".printf(e.message));
-            return null;
-        }
+
+            try {
+
+                var parser = new Json.Parser();
+                parser.load_from_data(get_json(message), -1);
+
+                var arr = parser.get_root().get_array();
+
+                var list = new List<KimaiTimesheet>();
+
+                for (uint i = 0; i < arr.get_length(); i++)
+                    list.append(parse_timesheet(arr.get_element(i).get_object()));
+
+                callback(true, list, null);
+
+            } catch (Error e) {
+                callback(false, null, e.message);
+            }
+        });
     }
 
-    public async KimaiProject? get_project(int project_id) throws GLib.Error {
-        if (!is_connection_valid) {
-            return null;
-        }
+    public void start_timer(int project_id, int activity_id, string description, owned TimesheetCallback callback) {
 
-        string endpoint = "/projects/%d".printf(project_id);
-        string response = yield request("GET", endpoint);
-        if (response == null || response.length == 0) {
-            warning("Empty response from " + endpoint);
-            return null;
-        }
+        string json_body = "{ \"project\": %d, \"activity\": %d, \"description\": \"%s\" }"
+            .printf(project_id, activity_id, description);
 
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.OBJECT) {
-                warning("Invalid JSON structure from " + endpoint);
-                return null;
+        request("POST", "/timesheets", json_body, (session, message) => {
+
+            if (message.status_code != Soup.Status.OK &&
+                message.status_code != Soup.Status.CREATED)
+            {
+                callback(false, null, message.reason_phrase);
+                return;
             }
-            return yield parse_project_object(root.get_object());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from " + endpoint + ": %s".printf(e.message));
-            return null;
-        }
+
+            try {
+
+                var parser = new Json.Parser();
+                parser.load_from_data(get_json(message), -1);
+
+                var obj = parser.get_root().get_object();
+
+                callback(true, parse_timesheet(obj), null);
+
+            } catch (Error e) {
+                callback(false, null, e.message);
+            }
+        });
     }
 
-    public async KimaiActivity? get_activity(int activity_id) throws GLib.Error {
-        if (!is_connection_valid) {
-            return null;
-        }
-
-        string endpoint = "/activities/%d".printf(activity_id);
-        string response = yield request("GET", endpoint);
-        if (response == null || response.length == 0) {
-            warning("Empty response from " + endpoint);
-            return null;
-        }
-
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.OBJECT) {
-                warning("Invalid JSON structure from " + endpoint);
-                return null;
-            }
-            return yield parse_activity_object(root.get_object());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from " + endpoint + ": %s".printf(e.message));
-            return null;
-        }
-    }
-
-    public async List<KimaiTimesheet> get_active_timesheets() throws GLib.Error {
-        if (!is_connection_valid) {
-            return new List<KimaiTimesheet>();
-        }
-
-        string response = yield request("GET", "/timesheets/active");
-        if (response == null || response.length == 0) {
-            warning("Empty response from /timesheets/active");
-            return new List<KimaiTimesheet>();
-        }
-
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
-                warning("Invalid JSON structure from /timesheets/active");
-                return new List<KimaiTimesheet>();
-            }
-            return yield parse_timesheets_array(root.get_array());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from /timesheets/active: %s".printf(e.message));
-            return new List<KimaiTimesheet>();
-        }
-    }
-
-    public async KimaiTimesheet? start_timer(int project_id, int activity_id, string description) throws GLib.Error {
-        if (!is_connection_valid) {
-            return null;
-        }
-
-        string json_body = "{ \"project\": %d, \"activity\": %d, \"description\": \"%s\" }".printf(project_id, activity_id, description);
-        string response = yield request("POST", "/timesheets", json_body);
-        if (response == null || response.length == 0) {
-            warning("Empty response from POST /timesheets");
-            return null;
-        }
-
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.OBJECT) {
-                warning("Invalid JSON structure from POST /timesheets");
-                return null;
-            }
-            return yield parse_timesheet_object(root.get_object());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from POST /timesheets: %s".printf(e.message));
-            return null;
-        }
-    }
-
-    public async KimaiTimesheet? stop_timer(int timesheet_id) throws GLib.Error {
-        if (!is_connection_valid) {
-            return null;
-        }
-
+    public void stop_timer(int timesheet_id, owned TimesheetCallback callback) {
         var now = new DateTime.now_local();
         string timestamp = now.format("%Y-%m-%dT%H:%M:%S");
 
         string json_body = "{ \"end\": \"%s\" }".printf(timestamp);
-        string url = "/timesheets/%d".printf(timesheet_id);
 
-        string response = yield request("PATCH", url, json_body);
-        if (response == null || response.length == 0) {
-            warning("Empty response from PATCH " + url);
-            return null;
-        }
+        request("PATCH", "/timesheets/%d".printf(timesheet_id), json_body, (session, message) => {
 
-        var parser = new Json.Parser();
-        try {
-            parser.load_from_data(response, -1);
-            var root = parser.get_root();
-            if (root == null || root.get_node_type() != Json.NodeType.OBJECT) {
-                warning("Invalid JSON structure from PATCH " + url);
-                return null;
+            if (message.status_code != Soup.Status.OK) {
+                callback(false, null, message.reason_phrase);
+                return;
             }
-            return yield parse_timesheet_object(root.get_object());
-        } catch (GLib.Error e) {
-            warning("Failed to parse JSON from PATCH " + url + ": %s".printf(e.message));
-            return null;
-        }
+
+            try {
+
+                var parser = new Json.Parser();
+                parser.load_from_data(get_json(message), -1);
+
+                var obj = parser.get_root().get_object();
+
+                callback(true, parse_timesheet(obj), null);
+
+            } catch (Error e) {
+                callback(false, null, e.message);
+            }
+        });
     }
 }
