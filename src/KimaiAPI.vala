@@ -135,79 +135,79 @@ public class KimaiAPI : GLib.Object {
         });
     }
     
-    private KimaiCustomer parse_customer_object(Json.Object obj) throws GLib.Error {
-        var c = new KimaiCustomer();
-        c.id = (int) obj.get_int_member("id");
-        c.name = obj.get_string_member("name");
-        return c;
+    private KimaiCustomer parse_customer_object(Json.Object object) throws GLib.Error {
+        var customer = new KimaiCustomer();
+        customer.id = (int) object.get_int_member("id");
+        customer.name = object.get_string_member("name");
+        return customer;
     }
 
-    private KimaiProject parse_project_object(Json.Object obj) throws GLib.Error {
-        var p = new KimaiProject();
-        p.id = (int) obj.get_int_member("id");
-        p.name = obj.get_string_member("name");
+    private KimaiProject parse_project_object(Json.Object object) throws GLib.Error {
+        var project = new KimaiProject();
+        project.id = (int) object.get_int_member("id");
+        project.name = object.get_string_member("name");
 
-        if (obj.has_member("customer")) {
-            var node = obj.get_member("customer");
+        if (object.has_member("customer")) {
+            var node = object.get_member("customer");
 
             if (node.get_node_type() == Json.NodeType.VALUE) {
-                p.customerId = (int) obj.get_int_member("customer");
+                project.customerId = (int) object.get_int_member("customer");
             }
             else {
-                var c = obj.get_object_member("customer");
-                p.customerId = (int) c.get_int_member("id");
+                var customer = object.get_object_member("customer");
+                project.customerId = (int) customer.get_int_member("id");
             }
         }
 
-        return p;
+        return project;
     }
 
-    private KimaiActivity parse_activity_object(Json.Object obj) throws GLib.Error {
-        var a = new KimaiActivity();
-        a.id = (int) obj.get_int_member("id");
-        a.name = obj.get_string_member("name");
-        return a;
+    private KimaiActivity parse_activity_object(Json.Object object) throws GLib.Error {
+        var activity = new KimaiActivity();
+        activity.id = (int) object.get_int_member("id");
+        activity.name = object.get_string_member("name");
+        return activity;
     }
 
-    private KimaiTimesheet parse_timesheet_object(Json.Object obj) throws GLib.Error {
-        var t = new KimaiTimesheet();
+    private KimaiTimesheet parse_timesheet_object(Json.Object object) throws GLib.Error {
+        var timesheet = new KimaiTimesheet();
 
-        t.id = (int) obj.get_int_member("id");
-        t.description = obj.get_string_member("description");
-        t.begin = new DateTime.from_iso8601(obj.get_string_member("begin"), null);
+        timesheet.id = (int) object.get_int_member("id");
+        timesheet.description = object.get_string_member("description");
+        timesheet.begin = new DateTime.from_iso8601(object.get_string_member("begin"), null);
 
-        if (obj.has_member("end")) {
-            var end_str = obj.get_string_member("end");
+        if (object.has_member("end")) {
+            var end_str = object.get_string_member("end");
             if (end_str != null && end_str.length > 0) {
-                t.end = new DateTime.from_iso8601(end_str, null);
+                timesheet.end = new DateTime.from_iso8601(end_str, null);
             }
         }
 
-        if (obj.has_member("project")) {
-            var node = obj.get_member("project");
+        if (object.has_member("project")) {
+            var node = object.get_member("project");
 
             if (node.get_node_type() == Json.NodeType.VALUE) {
-                t.projectId = (int) obj.get_int_member("project");
+                timesheet.projectId = (int) object.get_int_member("project");
             }
             else {
-                var p = obj.get_object_member("project");
-                t.projectId = (int) p.get_int_member("id");
+                var project = object.get_object_member("project");
+                timesheet.projectId = (int) project.get_int_member("id");
             }
         }
 
-        if (obj.has_member("activity")) {
-            var node = obj.get_member("activity");
+        if (object.has_member("activity")) {
+            var node = object.get_member("activity");
 
             if (node.get_node_type() == Json.NodeType.VALUE) {
-                t.activityId = (int) obj.get_int_member("activity");
+                timesheet.activityId = (int) object.get_int_member("activity");
             }
             else {
-                var a = obj.get_object_member("activity");
-                t.activityId = (int) a.get_int_member("id");
+                var activity = object.get_object_member("activity");
+                timesheet.activityId = (int) activity.get_int_member("id");
             }
         }
 
-        return t;
+        return timesheet;
     }
 
     public void get_customers(owned ResultList<KimaiCustomer> result) {
@@ -321,8 +321,9 @@ public class KimaiAPI : GLib.Object {
     public void get_activities(int? project_id, owned ResultList<KimaiActivity> result) {
         string endpoint = "/activities";
 
-        if (project_id != null)
+        if (project_id != null) {
             endpoint += "?project=" + project_id.to_string();
+        }
 
         request("GET", endpoint, null, (session, message) => {
             if (message.status_code == Soup.Status.CANT_RESOLVE ||
@@ -459,7 +460,6 @@ public class KimaiAPI : GLib.Object {
             }
 
             try {
-
                 var parser = new Json.Parser();
                 parser.load_from_data(get_json(message), -1);
 

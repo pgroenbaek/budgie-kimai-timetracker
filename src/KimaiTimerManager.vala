@@ -49,6 +49,7 @@ public class KimaiTimerManager : GLib.Object {
         new GLib.HashTable<int, KimaiActivity>(GLib.direct_hash, GLib.direct_equal);
 
     public int elapsed_seconds { get; private set; }
+    public int64 start_correction { get; private set; }
 
     private uint tick_id = 0;
     private uint refresh_interval = 5 * 1000;
@@ -153,17 +154,37 @@ public class KimaiTimerManager : GLib.Object {
             }
 
             if (timesheets != null && timesheets.length() > 0) {
-                active_timesheet = timesheets.nth_data(0);
+                var new_timesheet = timesheets.nth_data(0);
 
-                if (active_timesheet != null) {
+                if (new_timesheet != null) {
+                    bool is_new_timer = (
+                        active_timesheet == null ||
+                        active_timesheet.id != new_timesheet.id
+                    );
+
+                    active_timesheet = new_timesheet;
+
                     populate_active_project_info((int?) null, active_timesheet.projectId);
                     populate_active_activity_info(active_timesheet.projectId, active_timesheet.activityId);
 
-                    elapsed_seconds = (int)(new DateTime.now_utc().to_unix() - active_timesheet.begin.to_unix());
+                    if (is_new_timer) {
+                        var client_now = new DateTime.now_utc().to_unix();
+                        var server_begin = active_timesheet.begin.to_unix();
+                        var age = client_now - server_begin;
+
+                        start_correction = client_now - server_begin;
+
+                        if (age > 60) {
+                            elapsed_seconds = (int) ((age / 60) * 60);
+                        }
+                        else {
+                            elapsed_seconds = 0;
+                        }
+
+                        start_tick();
+                    }
 
                     settings?.set_boolean("timetracker-running", true);
-
-                    start_tick();
                 }
             }
             else {
@@ -186,13 +207,16 @@ public class KimaiTimerManager : GLib.Object {
                 return;
             }
 
+            var client_now = new DateTime.now_utc().to_unix();
+            var server_start = timesheet.begin.to_unix();
+
+            start_correction = client_now - server_start;
+            elapsed_seconds = 0;
+
             active_timesheet = timesheet;
             
             populate_active_project_info(customer_id, project_id);
             populate_active_activity_info(project_id, activity_id);
-
-            var now = new DateTime.now_utc().to_unix();
-            elapsed_seconds = (int) (now - active_timesheet.begin.to_unix());
 
             settings?.set_boolean("timetracker-running", true);
 
@@ -281,6 +305,7 @@ public class KimaiTimerManager : GLib.Object {
                     show_warning("Could not fetch projects: %s".printf(error));
                     return;
                 }
+
                 if (projects_table.contains(project_id)) {
                     active_project = projects_table.lookup(project_id);
                     populate_active_customer_info(active_project.customerId);
@@ -299,6 +324,7 @@ public class KimaiTimerManager : GLib.Object {
                     show_warning("Could not fetch projects: %s".printf(error));
                     return;
                 }
+
                 if (activities_table.contains(activity_id)) {
                     active_activity = activities_table.lookup(activity_id);
                 }
@@ -316,6 +342,7 @@ public class KimaiTimerManager : GLib.Object {
                     show_warning("Could not fetch customers: %s".printf(error));
                     return;
                 }
+
                 if (customers_table.contains(customer_id)) {
                     active_customer = customers_table.lookup(customer_id);
                 }
@@ -333,10 +360,13 @@ public class KimaiTimerManager : GLib.Object {
                 result(false, (GLib.List<KimaiCustomer>?) null, error);
                 return;
             }
+
             customers_table.remove_all();
+
             foreach (var customer in customers) {
                 customers_table.insert(customer.id, customer);
             }
+
             result(true, customers, null);
         });
     }
@@ -351,10 +381,13 @@ public class KimaiTimerManager : GLib.Object {
                 result(false, (GLib.List<KimaiProject>?) null, error);
                 return;
             }
+
             projects_table.remove_all();
+
             foreach (var project in projects) {
                 projects_table.insert(project.id, project);
             }
+
             result(true, projects, null);
         });
     }
@@ -369,10 +402,13 @@ public class KimaiTimerManager : GLib.Object {
                 result(false, (GLib.List<KimaiActivity>?) null, error);
                 return;
             }
+
             activities_table.remove_all();
+
             foreach (var activity in activities) {
                 activities_table.insert(activity.id, activity);
             }
+
             result(true, activities, null);
         });
     }
