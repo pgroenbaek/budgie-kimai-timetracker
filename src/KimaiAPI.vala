@@ -255,7 +255,7 @@ public class KimaiAPI : GLib.Object {
 
                 result(true, list, null);
 
-            } catch (Error e) {
+            } catch (GLib.Error e) {
                 result(false, (GLib.List<KimaiCustomer>?) null, e.message);
             }
         });
@@ -312,7 +312,7 @@ public class KimaiAPI : GLib.Object {
 
                 result(true, list, null);
 
-            } catch (Error e) {
+            } catch (GLib.Error e) {
                 result(false, (GLib.List<KimaiProject>?) null, e.message);
             }
         });
@@ -368,7 +368,7 @@ public class KimaiAPI : GLib.Object {
 
                 result(true, list, null);
 
-            } catch (Error e) {
+            } catch (GLib.Error e) {
                 result(false, (GLib.List<KimaiActivity>?) null, e.message);
             }
         });
@@ -427,7 +427,7 @@ public class KimaiAPI : GLib.Object {
 
                 result(true, list, null);
 
-            } catch (Error e) {
+            } catch (GLib.Error e) {
                 GLib.warning("Failed to parse JSON: %s".printf(e.message));
                 result(false, null, e.message);
             }
@@ -475,7 +475,7 @@ public class KimaiAPI : GLib.Object {
 
                 result(true, parse_timesheet_object(obj), null);
 
-            } catch (Error e) {
+            } catch (GLib.Error e) {
                 result(false, (KimaiTimesheet?) null, e.message);
             }
         });
@@ -515,7 +515,7 @@ public class KimaiAPI : GLib.Object {
 
                 result(true, parse_timesheet_object(obj), null);
 
-            } catch (Error e) {
+            } catch (GLib.Error e) {
                 result(false, (KimaiTimesheet?) null, e.message);
             }
         });
