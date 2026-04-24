@@ -135,14 +135,14 @@ public class KimaiAPI : GLib.Object {
         });
     }
     
-    private KimaiCustomer parse_customer_object(Json.Object obj) {
+    private KimaiCustomer parse_customer_object(Json.Object obj) throws GLib.Error {
         var c = new KimaiCustomer();
         c.id = (int) obj.get_int_member("id");
         c.name = obj.get_string_member("name");
         return c;
     }
 
-    private KimaiProject parse_project_object(Json.Object obj) {
+    private KimaiProject parse_project_object(Json.Object obj) throws GLib.Error {
         var p = new KimaiProject();
         p.id = (int) obj.get_int_member("id");
         p.name = obj.get_string_member("name");
@@ -152,7 +152,8 @@ public class KimaiAPI : GLib.Object {
 
             if (node.get_node_type() == Json.NodeType.VALUE) {
                 p.customerId = (int) obj.get_int_member("customer");
-            } else {
+            }
+            else {
                 var c = obj.get_object_member("customer");
                 p.customerId = (int) c.get_int_member("id");
             }
@@ -161,14 +162,14 @@ public class KimaiAPI : GLib.Object {
         return p;
     }
 
-    private KimaiActivity parse_activity_object(Json.Object obj) {
+    private KimaiActivity parse_activity_object(Json.Object obj) throws GLib.Error {
         var a = new KimaiActivity();
         a.id = (int) obj.get_int_member("id");
         a.name = obj.get_string_member("name");
         return a;
     }
 
-    private KimaiTimesheet parse_timesheet_object(Json.Object obj) {
+    private KimaiTimesheet parse_timesheet_object(Json.Object obj) throws GLib.Error {
         var t = new KimaiTimesheet();
 
         t.id = (int) obj.get_int_member("id");
@@ -187,7 +188,8 @@ public class KimaiAPI : GLib.Object {
 
             if (node.get_node_type() == Json.NodeType.VALUE) {
                 t.projectId = (int) obj.get_int_member("project");
-            } else {
+            }
+            else {
                 var p = obj.get_object_member("project");
                 t.projectId = (int) p.get_int_member("id");
             }
@@ -198,7 +200,8 @@ public class KimaiAPI : GLib.Object {
 
             if (node.get_node_type() == Json.NodeType.VALUE) {
                 t.activityId = (int) obj.get_int_member("activity");
-            } else {
+            }
+            else {
                 var a = obj.get_object_member("activity");
                 t.activityId = (int) a.get_int_member("id");
             }
@@ -226,16 +229,29 @@ public class KimaiAPI : GLib.Object {
             }
 
             try {
-
                 var parser = new Json.Parser();
                 parser.load_from_data(get_json(message), -1);
 
-                var arr = parser.get_root().get_array();
+                var root = parser.get_root();
 
+                if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
+                    GLib.warning("Invalid JSON structure from /timesheets/active");
+                    result(false, null, "Unexpected JSON response from API, was not an array.");
+                    return;
+                }
+
+                var arr = root.get_array();
                 var list = new GLib.List<KimaiCustomer>();
 
-                for (uint i = 0; i < arr.get_length(); i++)
-                    list.append(parse_customer_object(arr.get_element(i).get_object()));
+                for (uint i = 0; i < arr.get_length(); i++) {
+                    var node = arr.get_element(i);
+
+                    if (node == null || node.get_node_type() != Json.NodeType.OBJECT) {
+                        continue;
+                    }
+
+                    list.append(parse_customer_object(node.get_object()));
+                }
 
                 result(true, list, null);
 
@@ -270,16 +286,29 @@ public class KimaiAPI : GLib.Object {
             }
 
             try {
-
                 var parser = new Json.Parser();
                 parser.load_from_data(get_json(message), -1);
 
-                var arr = parser.get_root().get_array();
+                var root = parser.get_root();
 
+                if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
+                    GLib.warning("Invalid JSON structure from /timesheets/active");
+                    result(false, null, "Unexpected JSON response from API, was not an array.");
+                    return;
+                }
+
+                var arr = root.get_array();
                 var list = new GLib.List<KimaiProject>();
 
-                for (uint i = 0; i < arr.get_length(); i++)
-                    list.append(parse_project_object(arr.get_element(i).get_object()));
+                for (uint i = 0; i < arr.get_length(); i++) {
+                    var node = arr.get_element(i);
+
+                    if (node == null || node.get_node_type() != Json.NodeType.OBJECT) {
+                        continue;
+                    }
+
+                    list.append(parse_project_object(node.get_object()));
+                }
 
                 result(true, list, null);
 
@@ -316,12 +345,26 @@ public class KimaiAPI : GLib.Object {
                 var parser = new Json.Parser();
                 parser.load_from_data(get_json(message), -1);
 
-                var arr = parser.get_root().get_array();
+                var root = parser.get_root();
 
+                if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
+                    GLib.warning("Invalid JSON structure from /timesheets/active");
+                    result(false, null, "Unexpected JSON response from API, was not an array.");
+                    return;
+                }
+
+                var arr = root.get_array();
                 var list = new GLib.List<KimaiActivity>();
 
-                for (uint i = 0; i < arr.get_length(); i++)
-                    list.append(parse_activity_object(arr.get_element(i).get_object()));
+                for (uint i = 0; i < arr.get_length(); i++) {
+                    var node = arr.get_element(i);
+
+                    if (node == null || node.get_node_type() != Json.NodeType.OBJECT) {
+                        continue;
+                    }
+
+                    list.append(parse_activity_object(node.get_object()));
+                }
 
                 result(true, list, null);
 
@@ -352,7 +395,7 @@ public class KimaiAPI : GLib.Object {
             string response = get_json(message);
 
             if (response == null || response.length == 0) {
-                warning("Empty response from /timesheets/active");
+                GLib.warning("Empty response from /timesheets/active");
                 result(true, new GLib.List<KimaiTimesheet>(), null);
                 return;
             }
@@ -364,20 +407,20 @@ public class KimaiAPI : GLib.Object {
                 var root = parser.get_root();
 
                 if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
-                    warning("Invalid JSON structure from /timesheets/active");
-                    result(false, null, "Invalid JSON (expected array)");
+                    GLib.warning("Invalid JSON structure from /timesheets/active");
+                    result(false, null, "Unexpected JSON response from API, was not an array.");
                     return;
                 }
 
                 var arr = root.get_array();
-
                 var list = new GLib.List<KimaiTimesheet>();
 
                 for (uint i = 0; i < arr.get_length(); i++) {
                     var node = arr.get_element(i);
 
-                    if (node == null || node.get_node_type() != Json.NodeType.OBJECT)
+                    if (node == null || node.get_node_type() != Json.NodeType.OBJECT) {
                         continue;
+                    }
 
                     list.append(parse_timesheet_object(node.get_object()));
                 }
@@ -385,7 +428,7 @@ public class KimaiAPI : GLib.Object {
                 result(true, list, null);
 
             } catch (Error e) {
-                warning("Failed to parse JSON: %s".printf(e.message));
+                GLib.warning("Failed to parse JSON: %s".printf(e.message));
                 result(false, null, e.message);
             }
         });
@@ -420,7 +463,15 @@ public class KimaiAPI : GLib.Object {
                 var parser = new Json.Parser();
                 parser.load_from_data(get_json(message), -1);
 
-                var obj = parser.get_root().get_object();
+                var root = parser.get_root();
+
+                if (root == null || root.get_node_type() != Json.NodeType.OBJECT) {
+                    GLib.warning("Invalid JSON structure from /timesheets/active");
+                    result(false, null, "Unexpected JSON response from API, was not an object.");
+                    return;
+                }
+
+                var obj = root.get_object();
 
                 result(true, parse_timesheet_object(obj), null);
 
@@ -452,7 +503,15 @@ public class KimaiAPI : GLib.Object {
                 var parser = new Json.Parser();
                 parser.load_from_data(get_json(message), -1);
 
-                var obj = parser.get_root().get_object();
+                var root = parser.get_root();
+
+                if (root == null || root.get_node_type() != Json.NodeType.OBJECT) {
+                    GLib.warning("Invalid JSON structure from /timesheets/active");
+                    result(false, null, "Unexpected JSON response from API, was not an object.");
+                    return;
+                }
+
+                var obj = root.get_object();
 
                 result(true, parse_timesheet_object(obj), null);
 

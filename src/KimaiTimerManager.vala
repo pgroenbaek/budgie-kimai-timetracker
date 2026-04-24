@@ -57,40 +57,48 @@ public class KimaiTimerManager : GLib.Object {
 
     public string customer {
         get {
-            if (active_customer != null)
+            if (active_customer != null) {
                 return active_customer.name;
-            else if (last_customer != null)
+            }
+            else if (last_customer != null) {
                 return last_customer.name;
+            }
             return "N/A";
         }
     }
 
     public string project {
         get {
-            if (active_project != null)
+            if (active_project != null) {
                 return active_project.name;
-            else if (last_project != null)
+            }
+            else if (last_project != null) {
                 return last_project.name;
+            }
             return "N/A";
         }
     }
 
     public string activity {
         get {
-            if (active_activity != null)
+            if (active_activity != null) {
                 return active_activity.name;
-            else if (last_activity != null)
+            }
+            else if (last_activity != null) {
                 return last_activity.name;
+            }
             return "N/A";
         }
     }
 
     public string description {
         get {
-            if (active_timesheet != null)
+            if (active_timesheet != null) {
                 return active_timesheet.description;
-            else if (last_timesheet != null)
+            }
+            else if (last_timesheet != null) {
                 return last_timesheet.description;
+            }
             return "N/A";
         }
     }
@@ -139,7 +147,8 @@ public class KimaiTimerManager : GLib.Object {
 
         api.get_active_timesheets((success, timesheets, error) => {
             if (!success) {
-                warning("Failed to refresh timers: %s", error);
+                GLib.warning("Failed to refresh active timer: %s", error);
+                show_warning("Error refreshing data from API: %s".printf(error));
                 return;
             }
 
@@ -172,7 +181,8 @@ public class KimaiTimerManager : GLib.Object {
 
         api.start_timer(project_id, activity_id, description, (success, timesheet, error) => {
             if (!success) {
-                warning("Start failed: %s", error);
+                GLib.warning("Start failed: %s", error);
+                show_warning("Error starting timer: %s".printf(error));
                 return;
             }
 
@@ -204,7 +214,8 @@ public class KimaiTimerManager : GLib.Object {
 
         api.stop_timer(id, (success, timesheet, error) => {
             if (!success) {
-                warning("Stop failed: %s", error);
+                GLib.warning("Stop failed: %s", error);
+                show_warning("Error stopping timer: %s".printf(error));
                 return;
             }
 
@@ -282,8 +293,7 @@ public class KimaiTimerManager : GLib.Object {
         if (activities_table.contains(activity_id)) {
             active_activity = activities_table.lookup(activity_id);
         }
-        else
-        {
+        else {
             load_activities(project_id, (success, activities, error) => {
                 if (!success) {
                     show_warning("Could not fetch projects: %s".printf(error));

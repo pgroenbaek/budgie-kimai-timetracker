@@ -560,12 +560,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         var has_activity = activity_id != -1;
         var has_description = description != "";
 
-        GLib.message("Customer: %d".printf(customer_id));
-        GLib.message("Project: %d".printf(project_id));
-        GLib.message("Activity: %d".printf(activity_id));
-        GLib.message("Description: %s".printf(description));
-        GLib.message("---");
-
         return has_customer && has_project && has_activity && has_description;
     }
 }
