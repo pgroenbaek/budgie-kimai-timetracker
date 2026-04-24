@@ -52,6 +52,7 @@ public class KimaiAPI : GLib.Object {
 
         if (body != null) {
             message.request_headers.append("Content-Type", "application/json");
+            message.request_headers.append("Accept", "application/json");
             message.set_request("application/json", Soup.MemoryUse.COPY, (uint8[]) body.data);
         }
 
@@ -133,161 +134,7 @@ public class KimaiAPI : GLib.Object {
             ));
         });
     }
-
-    /*
-    private KimaiCustomer parse_customer(Json.Object obj) {
-        return new KimaiCustomer() {
-            id = (int) obj.get_int_member("id"),
-            name = obj.get_string_member("name")
-        };
-    }
-
-    private KimaiProject parse_project(Json.Object obj) {
-        return new KimaiProject() {
-            id = (int) obj.get_int_member("id"),
-            name = obj.get_string_member("name")
-        };
-    }
-
-    private KimaiActivity parse_activity(Json.Object obj) {
-        return new KimaiActivity() {
-            id = (int) obj.get_int_member("id"),
-            name = obj.get_string_member("name")
-        };
-    }
-
-    private KimaiTimesheet parse_timesheet(Json.Object obj) {
-        var t = new KimaiTimesheet();
-
-        t.id = (int) obj.get_int_member("id");
-        t.description = obj.get_string_member("description");
-        t.begin = new DateTime.from_iso8601(obj.get_string_member("begin"), null);
-
-        if (obj.has_member("end")) {
-            var end = obj.get_string_member("end");
-            if (end != null && end != "")
-                t.end = new DateTime.from_iso8601(end, null);
-        }
-
-        if (obj.has_member("project"))
-            t.project = parse_project(obj.get_object_member("project"));
-
-        if (obj.has_member("activity"))
-            t.activity = parse_activity(obj.get_object_member("activity"));
-
-        return t;
-    }*/
-
-    /*private KimaiCustomer parse_customer_object(Json.Object obj) {
-        return new KimaiCustomer() {
-            id = (int) obj.get_int_member("id"),
-            name = obj.get_string_member("name")
-        };
-    }
-
-    private KimaiProject parse_project_object(Json.Object obj) {
-        var project = new KimaiProject() {
-            id = (int) obj.get_int_member("id"),
-            name = obj.get_string_member("name")
-        };
-
-        if (obj.has_member("customer")) {
-            var customer_node = obj.get_member("customer");
-
-            if (customer_node.get_node_type() == Json.NodeType.OBJECT) {
-                project.customer = parse_customer_object(obj.get_object_member("customer"));
-            } else {
-                project.customer = get_customer((int) obj.get_int_member("customer"));
-            }
-        }
-
-        return project;
-    }
-
-    private KimaiActivity parse_activity_object(Json.Object obj) {
-        return new KimaiActivity() {
-            id = (int) obj.get_int_member("id"),
-            name = obj.get_string_member("name")
-        };
-    }
-
-    private KimaiTimesheet parse_timesheet_object(Json.Object obj) {
-        var timesheet = new KimaiTimesheet();
-
-        timesheet.id = (int) obj.get_int_member("id");
-        timesheet.description = obj.get_string_member("description");
-        timesheet.begin = new DateTime.from_iso8601(obj.get_string_member("begin"), null);
-
-        if (obj.has_member("end")) {
-            var end_str = obj.get_string_member("end");
-            if (end_str != null && end_str.length > 0) {
-                timesheet.end = new DateTime.from_iso8601(end_str, null);
-            }
-        }
-
-        if (obj.has_member("project")) {
-            var project_node = obj.get_member("project");
-
-            if (project_node.get_node_type() == Json.NodeType.OBJECT) {
-                timesheet.project = parse_project_object(obj.get_object_member("project"));
-            } else {
-                timesheet.project = get_project((int) obj.get_int_member("project"));
-            }
-        }
-
-        if (obj.has_member("activity")) {
-            var activity_node = obj.get_member("activity");
-
-            if (activity_node.get_node_type() == Json.NodeType.OBJECT) {
-                timesheet.activity = parse_activity_object(obj.get_object_member("activity"));
-            } else {
-                timesheet.activity = get_activity((int) obj.get_int_member("activity"));
-            }
-        }
-
-        return timesheet;
-    }
-
-    private GLib.List<KimaiCustomer> parse_customers_array(Json.Array arr) {
-        var result = new GLib.List<KimaiCustomer>();
-
-        for (uint i = 0; i < arr.get_length(); i++) {
-            result.append(parse_customer_object(arr.get_element(i).get_object()));
-        }
-
-        return result;
-    }
-
-    private GLib.List<KimaiProject> parse_projects_array(Json.Array arr) {
-        var result = new GLib.List<KimaiProject>();
-
-        for (uint i = 0; i < arr.get_length(); i++) {
-            result.append(parse_project_object(arr.get_element(i).get_object()));
-        }
-
-        return result;
-    }
-
-    private GLib.List<KimaiActivity> parse_activities_array(Json.Array arr) {
-        var result = new GLib.List<KimaiActivity>();
-
-        for (uint i = 0; i < arr.get_length(); i++) {
-            result.append(parse_activity_object(arr.get_element(i).get_object()));
-        }
-
-        return result;
-    }
-
-    private GLib.List<KimaiTimesheet> parse_timesheets_array(Json.Array arr) {
-        var result = new GLib.List<KimaiTimesheet>();
-
-        for (uint i = 0; i < arr.get_length(); i++) {
-            result.append(parse_timesheet_object(arr.get_element(i).get_object()));
-        }
-
-        return result;
-    }*/
-
+    
     private KimaiCustomer parse_customer_object(Json.Object obj) {
         var c = new KimaiCustomer();
         c.id = (int) obj.get_int_member("id");
@@ -373,6 +220,7 @@ public class KimaiAPI : GLib.Object {
             }
 
             if (message.status_code != Soup.Status.OK) {
+                connection_valid = false;
                 result(false, (GLib.List<KimaiCustomer>?) null, message.reason_phrase);
                 return;
             }
@@ -400,8 +248,9 @@ public class KimaiAPI : GLib.Object {
     public void get_projects(int? customer_id, owned ResultList<KimaiProject> result) {
         string endpoint = "/projects";
 
-        if (customer_id != null)
+        if (customer_id != null) {
             endpoint += "?customer=" + customer_id.to_string();
+        }
 
         request("GET", endpoint, null, (session, message) => {
             if (message.status_code == Soup.Status.CANT_RESOLVE ||
@@ -415,6 +264,7 @@ public class KimaiAPI : GLib.Object {
             }
 
             if (message.status_code != Soup.Status.OK) {
+                connection_valid = false;
                 result(false, (GLib.List<KimaiProject>?) null, message.reason_phrase);
                 return;
             }
@@ -457,6 +307,7 @@ public class KimaiAPI : GLib.Object {
             }
 
             if (message.status_code != Soup.Status.OK) {
+                connection_valid = false;
                 result(false, (GLib.List<KimaiActivity>?) null, message.reason_phrase);
                 return;
             }
@@ -480,111 +331,7 @@ public class KimaiAPI : GLib.Object {
         });
     }
 
-    public void get_customer(int customer_id, owned Result<KimaiCustomer> result) {
-        string endpoint = "/customers/%d".printf(customer_id);
-
-        request("GET", endpoint, null, (session, message) => {
-            if (message.status_code == Soup.Status.CANT_RESOLVE ||
-                message.status_code == Soup.Status.CANT_CONNECT ||
-                message.status_code == Soup.Status.SSL_FAILED ||
-                message.status_code == Soup.Status.IO_ERROR)
-            {
-                connection_valid = false;
-                result(false, (KimaiCustomer?) null, "Network error: Cannot reach server.");
-                return;
-            }
-
-            if (message.status_code != Soup.Status.OK) {
-                result(false, (KimaiCustomer?) null, message.reason_phrase);
-                return;
-            }
-
-            try {
-
-                var parser = new Json.Parser();
-                parser.load_from_data(get_json(message), -1);
-
-                var obj = parser.get_root().get_object();
-
-                result(true, parse_customer_object(obj), null);
-
-            } catch (Error e) {
-                result(false, (KimaiCustomer?) null, e.message);
-            }
-        });
-    }
-
-
-    public void get_project(int project_id, owned Result<KimaiProject> result) {
-        string endpoint = "/projects/%d".printf(project_id);
-
-        request("GET", endpoint, null, (session, message) => {
-            if (message.status_code == Soup.Status.CANT_RESOLVE ||
-                message.status_code == Soup.Status.CANT_CONNECT ||
-                message.status_code == Soup.Status.SSL_FAILED ||
-                message.status_code == Soup.Status.IO_ERROR)
-            {
-                connection_valid = false;
-                result(false, (KimaiProject?) null, "Network error: Cannot reach server.");
-                return;
-            }
-
-            if (message.status_code != Soup.Status.OK) {
-                result(false, (KimaiProject?) null, message.reason_phrase);
-                return;
-            }
-
-            try {
-
-                var parser = new Json.Parser();
-                parser.load_from_data(get_json(message), -1);
-
-                var obj = parser.get_root().get_object();
-
-                result(true, parse_project_object(obj), null);
-
-            } catch (Error e) {
-                result(false, (KimaiProject?) null, e.message);
-            }
-        });
-    }
-
-
-    public void get_activity(int activity_id, owned Result<KimaiActivity> result) {
-        string endpoint = "/activities/%d".printf(activity_id);
-
-        request("GET", endpoint, null, (session, message) => {
-            if (message.status_code == Soup.Status.CANT_RESOLVE ||
-                message.status_code == Soup.Status.CANT_CONNECT ||
-                message.status_code == Soup.Status.SSL_FAILED ||
-                message.status_code == Soup.Status.IO_ERROR)
-            {
-                connection_valid = false;
-                result(false, (KimaiActivity?) null, "Network error: Cannot reach server.");
-                return;
-            }
-
-            if (message.status_code != Soup.Status.OK) {
-                result(false, (KimaiActivity?) null, message.reason_phrase);
-                return;
-            }
-
-            try {
-
-                var parser = new Json.Parser();
-                parser.load_from_data(get_json(message), -1);
-
-                var obj = parser.get_root().get_object();
-
-                result(true, parse_activity_object(obj), null);
-
-            } catch (Error e) {
-                result(false, (KimaiActivity?) null, e.message);
-            }
-        });
-    }
-
-    public void get_active_timesheets(owned ResultList<KimaiTimesheet> result) {
+    public void get_active_timesheets(owned ResultList<KimaiTimesheet?> result) {
         request("GET", "/timesheets/active", null, (session, message) => {
             if (message.status_code == Soup.Status.CANT_RESOLVE ||
                 message.status_code == Soup.Status.CANT_CONNECT ||
@@ -592,36 +339,59 @@ public class KimaiAPI : GLib.Object {
                 message.status_code == Soup.Status.IO_ERROR)
             {
                 connection_valid = false;
-                result(false, (GLib.List<KimaiTimesheet>?) null, "Network error: Cannot reach server.");
+                result(false, null, "Network error: Cannot reach server.");
                 return;
             }
 
             if (message.status_code != Soup.Status.OK) {
-                result(false, (GLib.List<KimaiTimesheet>?) null, message.reason_phrase);
+                connection_valid = false;
+                result(false, null, message.reason_phrase);
+                return;
+            }
+
+            string response = get_json(message);
+
+            if (response == null || response.length == 0) {
+                warning("Empty response from /timesheets/active");
+                result(true, new GLib.List<KimaiTimesheet>(), null);
                 return;
             }
 
             try {
-
                 var parser = new Json.Parser();
-                parser.load_from_data(get_json(message), -1);
+                parser.load_from_data(response, -1);
 
-                var arr = parser.get_root().get_array();
+                var root = parser.get_root();
+
+                if (root == null || root.get_node_type() != Json.NodeType.ARRAY) {
+                    warning("Invalid JSON structure from /timesheets/active");
+                    result(false, null, "Invalid JSON (expected array)");
+                    return;
+                }
+
+                var arr = root.get_array();
 
                 var list = new GLib.List<KimaiTimesheet>();
 
-                for (uint i = 0; i < arr.get_length(); i++)
-                    list.append(parse_timesheet_object(arr.get_element(i).get_object()));
+                for (uint i = 0; i < arr.get_length(); i++) {
+                    var node = arr.get_element(i);
+
+                    if (node == null || node.get_node_type() != Json.NodeType.OBJECT)
+                        continue;
+
+                    list.append(parse_timesheet_object(node.get_object()));
+                }
 
                 result(true, list, null);
 
             } catch (Error e) {
-                result(false, (GLib.List<KimaiTimesheet>?) null, e.message);
+                warning("Failed to parse JSON: %s".printf(e.message));
+                result(false, null, e.message);
             }
         });
     }
 
-    public void start_timer(int project_id, int activity_id, string description, owned Result<KimaiTimesheet> result) {
+    public void start_timer(int project_id, int activity_id, string description, owned Result<KimaiTimesheet?> result) {
 
         string json_body = "{ \"project\": %d, \"activity\": %d, \"description\": \"%s\" }"
             .printf(project_id, activity_id, description);
@@ -640,6 +410,7 @@ public class KimaiAPI : GLib.Object {
             if (message.status_code != Soup.Status.OK &&
                 message.status_code != Soup.Status.CREATED)
             {
+                connection_valid = false;
                 result(false, (KimaiTimesheet?) null, message.reason_phrase);
                 return;
             }
@@ -659,13 +430,8 @@ public class KimaiAPI : GLib.Object {
         });
     }
 
-    public void stop_timer(int timesheet_id, owned Result<KimaiTimesheet> result) {
-        var now = new DateTime.now_local();
-        string timestamp = now.format("%Y-%m-%dT%H:%M:%S");
-
-        string json_body = "{ \"end\": \"%s\" }".printf(timestamp);
-
-        request("PATCH", "/timesheets/%d".printf(timesheet_id), json_body, (session, message) => {
+    public void stop_timer(int timesheet_id, owned Result<KimaiTimesheet?> result) {
+        request("PATCH", "/timesheets/%d/stop".printf(timesheet_id), null, (session, message) => {
             if (message.status_code == Soup.Status.CANT_RESOLVE ||
                 message.status_code == Soup.Status.CANT_CONNECT ||
                 message.status_code == Soup.Status.SSL_FAILED ||
@@ -677,12 +443,12 @@ public class KimaiAPI : GLib.Object {
             }
 
             if (message.status_code != Soup.Status.OK) {
+                connection_valid = false;
                 result(false, (KimaiTimesheet?) null, message.reason_phrase);
                 return;
             }
 
             try {
-
                 var parser = new Json.Parser();
                 parser.load_from_data(get_json(message), -1);
 

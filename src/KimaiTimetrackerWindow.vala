@@ -64,7 +64,8 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             "io.grnbk.kimaitimetracker",
             Secret.SchemaFlags.NONE,
             "api-token",
-            Secret.SchemaAttributeType.STRING
+            Secret.SchemaAttributeType.STRING,
+            null
         );
 
         var container = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
@@ -121,6 +122,11 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             update_buttons();
             update_labels();
         });
+
+        timer_manager.reconfigured.connect(() => {
+            refresh_combobox_data();
+        });
+
         timer_manager.stopped.connect(() => {
             update_buttons();
             label_duration.set_text("00:00:00");
@@ -252,11 +258,12 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         button_start.clicked.connect(() => {
             if (has_last_timesheet()) {
+                var customer_id = settings.get_int("last-customer");
                 var project_id = settings.get_int("last-project");
                 var activity_id = settings.get_int("last-activity");
                 var description = settings.get_string("last-description");
 
-                timer_manager.start_timer(project_id, activity_id, description);
+                timer_manager.start_timer(customer_id, project_id, activity_id, description);
                 update_buttons();
             }
         });
@@ -373,11 +380,12 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                 return;
             }
 
+            var customer_id = int.parse(customer_id_str);
             var project_id = int.parse(project_id_str);
             var activity_id = int.parse(activity_id_str);
             var description = entry_description.get_text();
 
-            timer_manager.start_timer(project_id, activity_id, description);
+            timer_manager.start_timer(customer_id, project_id, activity_id, description);
             update_buttons();
             switch_to_main();
         });
@@ -542,15 +550,21 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     }
 
     private bool has_last_timesheet() {
-        var customer_id = settings.get_int("last-customer");
-        var project_id = settings.get_int("last-project");
-        var activity_id = settings.get_int("last-activity");
-        var description = settings.get_string("last-description");
+        var customer_id = settings?.get_int("last-customer");
+        var project_id = settings?.get_int("last-project");
+        var activity_id = settings?.get_int("last-activity");
+        var description = settings?.get_string("last-description");
 
         var has_customer = customer_id != -1;
         var has_project = project_id != -1;
         var has_activity = activity_id != -1;
         var has_description = description != "";
+
+        GLib.message("Customer: %d".printf(customer_id));
+        GLib.message("Project: %d".printf(project_id));
+        GLib.message("Activity: %d".printf(activity_id));
+        GLib.message("Description: %s".printf(description));
+        GLib.message("---");
 
         return has_customer && has_project && has_activity && has_description;
     }
