@@ -49,7 +49,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     private Gtk.Label warning_label;
     private Gtk.Box warning_box;
 
-    private KimaiAPI api;
     private KimaiTimerManager timer_manager;
 
     private Secret.Schema api_token_schema;
@@ -65,35 +64,34 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             "io.grnbk.kimaitimetracker",
             Secret.SchemaFlags.NONE,
             "api-token",
-            Secret.SchemaAttributeType.STRING
+            Secret.SchemaAttributeType.STRING,
+            null
         );
 
+        var container = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
+        container.set_margin_top(6);
+        container.set_margin_bottom(6);
+        container.set_margin_start(6);
+        container.set_margin_end(6);
+        container.set_size_request(300, -1);
+
+        /*
+        Warning box
+        */
+        warning_box = build_warning_box();
+        container.pack_start(warning_box, false, false, 0);
+
+        /*
+        Timer manager.
+        */
         string base_url = settings?.get_string("kimai-api-baseurl") ?? "";
         string api_token = lookup_api_token() ?? "";
-
-        var vbox = new Gtk.Box(Gtk.Orientation.VERTICAL, 6);
-        vbox.set_margin_top(6);
-        vbox.set_margin_bottom(6);
-        vbox.set_margin_start(6);
-        vbox.set_margin_end(6);
-        vbox.set_size_request(300, -1);
-        add(vbox);
-
-        warning_box = build_warning_box();
-        vbox.pack_start(warning_box, false, false, 0);
-
-        api = new KimaiAPI(base_url, api_token);
-        timer_manager = new KimaiTimerManager(api, c_settings);
-
-        try {
-            api.validate_connection();
-            hide_warning();
-            settings.set_boolean("warning-persistent", false);
-        } catch (GLib.Error e) {
-            show_warning("%s".printf(e.message));
-            settings.set_boolean("warning-persistent", true);
-        }
-
+        
+        timer_manager = new KimaiTimerManager(c_settings, base_url, api_token);
+        
+        /*
+        Stack with main, form, and settings ui.
+        */
         main_view = build_main_view();
         form_view = build_form_view();
         settings_view = build_settings_view();
@@ -104,25 +102,35 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         stack.add_named(main_view, "main");
         stack.add_named(form_view, "form");
         stack.add_named(settings_view, "settings");
-        vbox.add(stack);
+        container.add(stack);
+        add(container);
 
-        timer_manager.connected.connect(() => {
+        /*
+        Events wiring.
+        */
+        timer_manager.show_warning.connect((message, persistent) => {
+            show_warning(message);
+            settings.set_boolean("warning-persistent", persistent);
+        });
+
+        timer_manager.hide_warning.connect(() => {
             hide_warning();
             settings.set_boolean("warning-persistent", false);
         });
-        timer_manager.disconnected.connect(() => {
-            show_warning("No internet connection");
-            settings.set_boolean("warning-persistent", true);
-        });
+
         timer_manager.updated.connect(() => {
             update_buttons();
             update_labels();
         });
+
+        timer_manager.reconfigured.connect(() => {
+            refresh_combobox_data();
+        });
+
         timer_manager.stopped.connect(() => {
             update_buttons();
             label_duration.set_text("00:00:00");
         });
-        timer_manager.refresh_from_server();
 
         this.show.connect(() => {
             var warning_persistent = settings.get_boolean("warning-persistent");
@@ -132,7 +140,6 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                 hide_warning();
             }
         });
-        //this.show_all();
     }
 
     private Gtk.Button create_icon_button(string icon_name, string label_text) {
@@ -251,11 +258,12 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
 
         button_start.clicked.connect(() => {
             if (has_last_timesheet()) {
+                var customer_id = settings.get_int("last-customer");
                 var project_id = settings.get_int("last-project");
                 var activity_id = settings.get_int("last-activity");
                 var description = settings.get_string("last-description");
 
-                timer_manager.start_timer(project_id, activity_id, description);
+                timer_manager.start_timer(customer_id, project_id, activity_id, description);
                 update_buttons();
             }
         });
@@ -303,40 +311,46 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         combobox_customer.changed.connect(() => {
             combobox_project.remove_all();
             combobox_activity.remove_all();
-            var customer_id_str = combobox_customer.get_active_id();
-            if (customer_id_str != null) {
-                int customer_id = int.parse(customer_id_str);
 
-                api.get_projects.begin(customer_id, (obj, res) => {
-                    try {
-                        var projects = api.get_projects.end(res);
-                        foreach (var project in projects) {
-                            combobox_project.append(project.id.to_string(), project.name);
-                        }
-                    } catch (GLib.Error e) {
-                        show_warning("Could not fetch projects: %s".printf(e.message));
-                    }
-                });
+            var id_str = combobox_customer.get_active_id();
+            if (id_str == null) {
+                return;
             }
+
+            int customer_id = int.parse(id_str);
+
+            timer_manager.load_projects(customer_id, (success, projects, error) => {
+                if (!success) {
+                    show_warning("Could not fetch projects: %s".printf(error));
+                    return;
+                }
+
+                foreach (var p in projects) {
+                    combobox_project.append(p.id.to_string(), p.name);
+                }
+            });
         });
 
         combobox_project.changed.connect(() => {
             combobox_activity.remove_all();
-            var project_id_str = combobox_project.get_active_id();
-            if (project_id_str != null) {
-                int project_id = int.parse(project_id_str);
 
-                api.get_activities.begin(project_id, (obj, res) => {
-                    try {
-                        var activities = api.get_activities.end(res);
-                        foreach (var activity in activities) {
-                            combobox_activity.append(activity.id.to_string(), activity.name);
-                        }
-                    } catch (GLib.Error e) {
-                        show_warning("Could not fetch activities: %s".printf(e.message));
-                    }
-                });
+            var id_str = combobox_project.get_active_id();
+            if (id_str == null) {
+                return;
             }
+
+            int project_id = int.parse(id_str);
+
+            timer_manager.load_activities(project_id, (success, activities, error) => {
+                if (!success) {
+                    show_warning("Could not fetch activities: %s".printf(error));
+                    return;
+                }
+
+                foreach (var a in activities) {
+                    combobox_activity.append(a.id.to_string(), a.name);
+                }
+            });
         });
 
         grid.attach(label_customer_title, 0, 0, 1, 1);
@@ -366,11 +380,12 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
                 return;
             }
 
+            var customer_id = int.parse(customer_id_str);
             var project_id = int.parse(project_id_str);
             var activity_id = int.parse(activity_id_str);
             var description = entry_description.get_text();
 
-            timer_manager.start_timer(project_id, activity_id, description);
+            timer_manager.start_timer(customer_id, project_id, activity_id, description);
             update_buttons();
             switch_to_main();
         });
@@ -422,23 +437,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             string new_base_url = entry_baseurl.get_text() ?? "";
             string new_api_token = entry_apitoken.get_text() ?? "";
 
-            settings?.set_string("kimai-api-baseurl", new_base_url);
             store_api_token(new_api_token);
 
-            api = new KimaiAPI(new_base_url, new_api_token);
-
-            try {
-                api.validate_connection();
-                hide_warning();
-                refresh_combobox_data();
-                settings.set_boolean("warning-persistent", false);
-            } catch (GLib.Error e) {
-                show_warning("%s".printf(e.message));
-                settings.set_boolean("warning-persistent", true);
-            }
-
-            timer_manager.set_api(api);
-            timer_manager.refresh_from_server();
+            timer_manager.set_api_info(new_base_url, new_api_token);
 
             switch_to_main();
         });
@@ -463,14 +464,17 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         combobox_project.remove_all();
         combobox_activity.remove_all();
 
-        api.get_customers.begin((obj, res) => {
-            try {
-                var customers = api.get_customers.end(res);
-                foreach (var customer in customers) {
-                    combobox_customer.append(customer.id.to_string(), customer.name);
-                }
-            } catch (GLib.Error e) {
-                show_warning("Could not fetch customers: %s".printf(e.message));
+        timer_manager.load_customers((success, customers, error) => {
+            if (!success) {
+                show_warning("Could not fetch customers: %s".printf(error));
+                return;
+            }
+
+            foreach (var customer in customers) {
+                combobox_customer.append(
+                    customer.id.to_string(),
+                    customer.name
+                );
             }
         });
     }
@@ -546,10 +550,10 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
     }
 
     private bool has_last_timesheet() {
-        var customer_id = settings.get_int("last-customer");
-        var project_id = settings.get_int("last-project");
-        var activity_id = settings.get_int("last-activity");
-        var description = settings.get_string("last-description");
+        var customer_id = settings?.get_int("last-customer");
+        var project_id = settings?.get_int("last-project");
+        var activity_id = settings?.get_int("last-activity");
+        var description = settings?.get_string("last-description");
 
         var has_customer = customer_id != -1;
         var has_project = project_id != -1;
