@@ -1,7 +1,7 @@
 project(
   'budgie-kimai-timetracker-applet',
   'vala',
-  version: '1.0.1',
+  version: '1.0.2',
   default_options: ['warning_level=2']
 )
 

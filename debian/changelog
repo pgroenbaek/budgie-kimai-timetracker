@@ -1,3 +1,13 @@
+budgie-kimai-timetracker-applet (1.0.2) unstable; urgency=medium
+
+  * Made the API connection implementation more robust.
+  * Better error handling in API code, e.g. deals with network connectivity errors.
+  * Fixed how API connection validation is managed, so that the applet no longer freezes budgie-panel entirely when starting a machine with no internet connection.
+  * Timers now always start at 00:00:00, unless the timer was already started via the Kimai web UI.
+
+ -- Peter Grønbæk Andersen <peter@grnbk.io>  Fri, 24 Apr 2026 12:00:00 +0000
+
+
 budgie-kimai-timetracker-applet (1.0.1) unstable; urgency=medium
 
   * Fixed applet UI opening without being clicked upon a budgie panel refresh
