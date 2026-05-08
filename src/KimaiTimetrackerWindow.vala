@@ -17,11 +17,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Budgie;
 using GLib;
 using Gdk;
 using Gtk;
 using Secret;
-using Budgie;
 
 public class KimaiTimetrackerWindow : Budgie.Popover {
     
