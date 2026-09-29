@@ -10,6 +10,16 @@
       <summary>Kimai API base URL</summary>
       <description>The base URL of the Kimai server API (e.g. https://kimai.example.com/api/).</description>
     </key>
+    <key name="idle-pause-timer" type="b">
+      <default>true</default>
+      <summary>Pause active timer when idle</summary>
+      <description>Whether to pause the active timer when idle.</description>
+    </key>
+    <key name="idle-duration" type="i">
+      <default>2</default>
+      <summary>Duration before being considered idle</summary>
+      <description>Number of minutes with no activity before being considered idle.</description>
+    </key>
     <key name="last-customer" type="i">
       <default>-1</default>
       <summary>Last customer</summary>

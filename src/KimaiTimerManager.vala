@@ -22,6 +22,7 @@ using GLib;
 public class KimaiTimerManager : GLib.Object {
 
     private KimaiAPI api;
+    private KimaiTimerIdleDetector idle_detector;
 
     public signal void reconfigured();
     public signal void updated();
@@ -53,6 +54,7 @@ public class KimaiTimerManager : GLib.Object {
 
     private uint tick_id = 0;
     private uint refresh_interval = 5 * 1000;
+    private bool paused = false;
 
     private unowned GLib.Settings? settings;
 
@@ -107,6 +109,7 @@ public class KimaiTimerManager : GLib.Object {
     public KimaiTimerManager(GLib.Settings? settings, string base_url, string api_token) {
         this.settings = settings;
         this.api = new KimaiAPI(base_url, api_token);
+        this.idle_detector = new KimaiTimerIdleDetector();
 
         refresh_from_server();
 
@@ -132,6 +135,14 @@ public class KimaiTimerManager : GLib.Object {
         });
     }
 
+    public void set_pause_timer_when_idle(bool v) {
+        settings?.set_boolean("idle-pause-timer", v);
+    }
+
+    public void set_idle_duration(int v) {
+        settings?.set_int("idle-duration", v);
+    }
+
     public void refresh_from_server() {
         if (!api.is_connection_valid()) {
             api.validate_connection((valid, error_message) => {
@@ -144,6 +155,27 @@ public class KimaiTimerManager : GLib.Object {
                 }
             });
             return;
+        }
+
+        if (settings != null && settings.get_boolean("idle-pause-timer")) {
+            int idle_duration = settings.get_int("idle-duration");
+            uint64 idle_seconds = idle_detector.get_idle_seconds();
+
+            if (idle_seconds > idle_duration * 60) {
+                if (!paused) {
+                    paused = true;
+                    stop_tick();
+                    show_warning("Timer paused due to inactivity", false);
+                }
+                return;
+            }
+            else if (paused) {
+                paused = false;
+                start_tick();
+                hide_warning();
+                updated();
+                return;
+            }
         }
 
         api.get_active_timesheets((success, timesheets, error) => {
@@ -281,8 +313,10 @@ public class KimaiTimerManager : GLib.Object {
         }
 
         tick_id = Timeout.add_seconds(1, () => {
-            elapsed_seconds++;
-            updated();
+            if (!paused) {
+                elapsed_seconds++;
+                updated();
+            }
             return true;
         });
     }

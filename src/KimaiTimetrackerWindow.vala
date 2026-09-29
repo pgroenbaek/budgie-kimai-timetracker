@@ -404,9 +404,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         label_baseurl_title.set_halign(Gtk.Align.END);
         var label_apitoken_title = new Gtk.Label("API Token:");
         label_apitoken_title.set_halign(Gtk.Align.END);
+        var label_pause_timer_when_idle_title = new Gtk.Label("Pause Timer When Idle:");
+        label_pause_timer_when_idle_title.set_halign(Gtk.Align.END);
+        var label_idle_duration_title = new Gtk.Label("Idle Duration (min):");
+        label_idle_duration_title.set_halign(Gtk.Align.END);
 
         string current_base_url = settings?.get_string("kimai-api-baseurl") ?? "";
         string current_api_token = lookup_api_token() ?? "";
+        bool current_pause_timer_when_idle = settings?.get_boolean("idle-pause-timer") ?? true;
+        int current_idle_duration = settings?.get_int("idle-duration") ?? 1;
 
         var entry_baseurl = new Gtk.Entry();
         entry_baseurl.set_hexpand(true);
@@ -419,10 +425,22 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         entry_apitoken.set_text(current_api_token);
         entry_apitoken.visibility = false;
 
+        var switch_pause_timer_when_idle = new Gtk.Switch();
+        switch_pause_timer_when_idle.set_halign(Gtk.Align.START);
+        switch_pause_timer_when_idle.set_active(current_pause_timer_when_idle);
+
+        var spin_idle_duration = new Gtk.SpinButton.with_range(1, 240, 1);
+        spin_idle_duration.set_hexpand(true);
+        spin_idle_duration.set_value(current_idle_duration);
+
         grid.attach(label_baseurl_title, 0, 0, 1, 1);
         grid.attach(entry_baseurl, 1, 0, 1, 1);
         grid.attach(label_apitoken_title, 0, 1, 1, 1);
         grid.attach(entry_apitoken, 1, 1, 1, 1);
+        grid.attach(label_pause_timer_when_idle_title, 0, 2, 1, 1);
+        grid.attach(switch_pause_timer_when_idle, 1, 2, 1, 1);
+        grid.attach(label_idle_duration_title, 0, 3, 1, 1);
+        grid.attach(spin_idle_duration, 1, 3, 1, 1);
         box.add(grid);
 
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
@@ -438,6 +456,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             string new_api_token = entry_apitoken.get_text() ?? "";
 
             store_api_token(new_api_token);
+
+            timer_manager.set_pause_timer_when_idle(switch_pause_timer_when_idle.get_active());
+            timer_manager.set_idle_duration(spin_idle_duration.get_value_as_int());
 
             timer_manager.set_api_info(new_base_url, new_api_token);
 
