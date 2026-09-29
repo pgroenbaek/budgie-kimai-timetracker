@@ -47,14 +47,28 @@ sudo apt install meson ninja-build valac
 ```
 
 
-### Build Debian Package
-First build the `.so` library:
+### Building the applet
+
+To build the `.so` library with meson/ninja for Budgie 10.10:
+
 ```bash
-meson setup build
+meson setup build --prefix=/usr -Dbudgielib=budgie-3.0
 ninja -C build
 ```
 
-Then build a `.deb` package:
+To build the `.so` library with meson/ninja for Budgie 10.9.x on Ubuntu prior to 26.04:
+
+```bash
+meson setup build --prefix=/usr --libdir=/usr/lib
+ninja -C build
+```
+
+### Packaging
+
+#### Debian
+
+To package the applet `.deb` package for Debian-based systems:
+
 ```bash
 dpkg-buildpackage -us -uc
 ```

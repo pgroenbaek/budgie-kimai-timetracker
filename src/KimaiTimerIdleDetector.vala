@@ -1,7 +1,7 @@
 /*
  * This file is part of the Budgie Desktop Kimai Timetracker Applet.
  *
- * Copyright (C) 2026 Peter Grønbæk Andersen <peter@grnbk.io>
+ * Copyright (C) 2025 Peter Grønbæk Andersen <peter@grnbk.io>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,129 +19,104 @@
 
 using GLib;
 
-[CCode(cheader_filename = "X11/Xlib.h")]
-public extern void* XOpenDisplay(string? name);
+/*
+ * X11 idle detector C wrapper.
+ */
+[CCode(cheader_filename = "x11-idle-detector.h")]
+private extern void* x11_idle_new();
 
-[CCode(cheader_filename = "X11/Xlib.h")]
-public extern int XCloseDisplay(void* display);
+[CCode(cheader_filename = "x11-idle-detector.h")]
+private extern void x11_idle_free(void* detector);
 
-[CCode(cheader_filename = "X11/Xlib.h")]
-public extern ulong XDefaultRootWindow(void* display);
+[CCode(cheader_filename = "x11-idle-detector.h")]
+private extern uint64 x11_idle_seconds(void* detector);
 
-[CCode(cheader_filename = "stdlib.h")]
-public extern void free(void* ptr);
 
-[CCode(cname = "XScreenSaverAllocInfo")]
-public extern void* xss_alloc();
+/*
+ * Wayland idle detector C wrapper.
+ */
+[CCode(cheader_filename = "wayland-idle-detector.h")]
+private extern void* wayland_idle_new();
 
-[CCode(cname = "XScreenSaverQueryInfo")]
-public extern int xss_query(
-    void* display,
-    ulong drawable,
-    void* info
-);
+[CCode(cheader_filename = "wayland-idle-detector.h")]
+private extern void wayland_idle_free(void* detector);
 
-public class KimaiTimerIdleDetector : Object {
+[CCode(cheader_filename = "wayland-idle-detector.h")]
+private extern uint64 wayland_idle_seconds(void* detector);
 
-    private void* display;
-    private ulong root;
-    private void* info;
-    private bool is_wayland;
+
+/*
+ * Idle detector for X11/Wayland.
+ *
+ * Chooses the backend automatically based
+ * on the session type.
+ */
+public class KimaiTimerIdleDetector : GLib.Object {
+
+    private bool is_wayland = false;
+    private void* detector = null;
 
     public KimaiTimerIdleDetector() {
+        string? session_type = Environment.get_variable("XDG_SESSION_TYPE");
 
-        var s = Environment.get_variable("XDG_SESSION_TYPE");
-        is_wayland = (s != null && s.down() == "wayland");
+        if (session_type != null && session_type.down() == "wayland") {
+            is_wayland = true;
+            init_wayland();
+        }
+        else {
+            is_wayland = false;
+            init_x11();
+        }
+    }
 
-        if (!is_wayland) {
-            display = XOpenDisplay(null);
+    private void init_x11() {
+        detector = x11_idle_new();
 
-            if (display != null) {
-                root = XDefaultRootWindow(display);
-                info = xss_alloc();
-            }
+        if (detector == null) {
+            GLib.warning("Unable to initialize X11 idle detector");
+        }
+    }
+
+    private void init_wayland() {
+        detector = wayland_idle_new();
+
+        if (detector == null) {
+            GLib.warning("Unable to initialize Wayland idle detector");
         }
     }
 
     public uint64 get_idle_seconds() {
-        if (is_wayland) {
-            return get_idle_wayland();
-        }
-
-        if (display == null || info == null) {
+        if (detector == null) {
             return 0;
         }
 
-        xss_query(display, root, info);
-
-        uint64 idle = ((uint64[]) info)[3];
-
-        return idle / 1000;
-    }
-
-    private uint64 get_idle_wayland() {
-        try {
-            string[] argv = {
-                "gdbus", "call",
-                "--system",
-                "--dest", "org.freedesktop.login1",
-                "--object-path", "/org/freedesktop/login1/session/self",
-                "--method", "org.freedesktop.DBus.Properties.Get",
-                "org.freedesktop.login1.Session",
-                "IdleSinceHintMonotonic"
-            };
-
-            string stdout;
-            Process.spawn_sync(
-                null,
-                argv,
-                null,
-                SpawnFlags.SEARCH_PATH,
-                null,
-                out stdout,
-                null,
-                null
-            );
-
-            int start = stdout.index_of("uint64 ");
-            if (start < 0) {
-                return 0;
-            }
-
-            start += 7;
-            int end = stdout.index_of(",", start);
-            if (end < 0) {
-                return 0;
-            }
-
-            string num = stdout.substring(start, end - start).strip();
-
-            uint64 idle_since = uint64.parse(num);
-            uint64 now = GLib.get_monotonic_time();
-
-            if (now > idle_since) {
-                return (now - idle_since) / 1000000;
-            }
-
-        }
-        catch (Error e) {
-
+        if (is_wayland) {
+            return wayland_idle_seconds(detector);
         }
 
-        return 0;
+        return x11_idle_seconds(detector);
     }
 
     public string get_backend_name() {
-        return is_wayland ? "wayland-logind" : "x11-xss";
+        if (detector == null) {
+            return is_wayland ? "wayland-unavailable" : "x11-unavailable";
+        }
+
+        return is_wayland ? "wayland-ext-idle-notify" : "x11-xss";
     }
 
-    ~StatusDotIdleDetector() {
-        if (info != null) {
-            free(info);
+    ~KimaiTimerIdleDetector() {
+        if (detector == null) {
+            return;
         }
 
-        if (display != null) {
-            XCloseDisplay(display);
+        if (is_wayland) {
+            wayland_idle_free(detector);
         }
+        else {
+            x11_idle_free(detector);
+        }
+
+        detector = null;
     }
 }
