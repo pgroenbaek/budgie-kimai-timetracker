@@ -166,14 +166,24 @@ public class KimaiTimerManager : GLib.Object {
                     paused = true;
                     stop_tick();
                     show_warning("Timer paused due to inactivity", false);
+                    stop_timer();
                 }
                 return;
             }
             else if (paused) {
                 paused = false;
-                start_tick();
                 hide_warning();
                 updated();
+                
+                if (has_last_timesheet()) {
+                    start_tick();
+                    start_timer(
+                        last_customer?.id ?? -1,
+                        last_project?.id ?? -1,
+                        last_activity?.id ?? -1,
+                        last_timesheet?.description ?? ""
+                    );
+                }
                 return;
             }
         }
@@ -445,5 +455,19 @@ public class KimaiTimerManager : GLib.Object {
 
             result(true, activities, null);
         });
+    }
+
+    public bool has_last_timesheet() {
+        var customer_id = settings?.get_int("last-customer");
+        var project_id = settings?.get_int("last-project");
+        var activity_id = settings?.get_int("last-activity");
+        var description = settings?.get_string("last-description");
+
+        var has_customer = customer_id != -1;
+        var has_project = project_id != -1;
+        var has_activity = activity_id != -1;
+        var has_description = description != "";
+
+        return has_customer && has_project && has_activity && has_description;
     }
 }

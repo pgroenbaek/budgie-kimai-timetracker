@@ -257,7 +257,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.pack_end(hbox_buttons, false, false, 0);
 
         button_start.clicked.connect(() => {
-            if (has_last_timesheet()) {
+            if (timer_manager.has_last_timesheet()) {
                 var customer_id = settings.get_int("last-customer");
                 var project_id = settings.get_int("last-project");
                 var activity_id = settings.get_int("last-activity");
@@ -522,7 +522,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             button_new.set_sensitive(false);
         }
         else {
-            var show_start = has_last_timesheet() ? true : false;
+            var show_start = timer_manager.has_last_timesheet() ? true : false;
             button_start.set_sensitive(show_start);
             button_stop.set_sensitive(false);
             button_new.set_sensitive(true);
@@ -568,19 +568,5 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         } catch (GLib.Error e) {
             show_warning("Could not store API token: %s".printf(e.message));
         }
-    }
-
-    private bool has_last_timesheet() {
-        var customer_id = settings?.get_int("last-customer");
-        var project_id = settings?.get_int("last-project");
-        var activity_id = settings?.get_int("last-activity");
-        var description = settings?.get_string("last-description");
-
-        var has_customer = customer_id != -1;
-        var has_project = project_id != -1;
-        var has_activity = activity_id != -1;
-        var has_description = description != "";
-
-        return has_customer && has_project && has_activity && has_description;
     }
 }
