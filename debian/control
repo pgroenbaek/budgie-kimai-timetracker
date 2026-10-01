@@ -11,8 +11,13 @@ Build-Depends:
  libsoup2.4-dev,
  libsecret-1-dev,
  libgtk-layer-shell-dev,
+ libx11-dev,
+ libxext-dev,
+ libxss-dev,
+ libwayland-dev,
  meson,
  valac,
+ gettext
 Standards-Version: 4.5.0
 Homepage: https://github.com/pgroenbaek/budgie-kimai-timetracker
 Vcs-Git: https://github.com/pgroenbaek/budgie-kimai-timetracker.git
@@ -20,12 +25,18 @@ Vcs-Browser: https://github.com/pgroenbaek/budgie-kimai-timetracker
 
 Package: budgie-kimai-timetracker-applet
 Architecture: any
-Depends: ${shlibs:Depends},
+Depends:
+ ${shlibs:Depends},
  ${misc:Depends},
  budgie-desktop,
  libgtk-3-0,
+ libglib2.0-0,
  libjson-glib-1.0-0,
  libsoup2.4-1,
- libc6,
- libsecret-1-0
+ libsecret-1-0,
+ libx11-6,
+ libxext6,
+ libxss1,
+ libwayland-client0,
+ libgtk-layer-shell0
 Description: A Budgie applet to track time using the Kimai Timetracker
