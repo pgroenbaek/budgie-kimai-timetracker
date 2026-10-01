@@ -17,11 +17,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Budgie;
 using GLib;
 using Gdk;
 using Gtk;
 using Secret;
-using Budgie;
 
 public class KimaiTimetrackerWindow : Budgie.Popover {
     
@@ -257,7 +257,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         box.pack_end(hbox_buttons, false, false, 0);
 
         button_start.clicked.connect(() => {
-            if (has_last_timesheet()) {
+            if (timer_manager.has_last_timesheet()) {
                 var customer_id = settings.get_int("last-customer");
                 var project_id = settings.get_int("last-project");
                 var activity_id = settings.get_int("last-activity");
@@ -404,9 +404,15 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         label_baseurl_title.set_halign(Gtk.Align.END);
         var label_apitoken_title = new Gtk.Label("API Token:");
         label_apitoken_title.set_halign(Gtk.Align.END);
+        var label_pause_timer_when_idle_title = new Gtk.Label("Pause Timer When Idle:");
+        label_pause_timer_when_idle_title.set_halign(Gtk.Align.END);
+        var label_idle_duration_title = new Gtk.Label("Idle Duration (min):");
+        label_idle_duration_title.set_halign(Gtk.Align.END);
 
         string current_base_url = settings?.get_string("kimai-api-baseurl") ?? "";
         string current_api_token = lookup_api_token() ?? "";
+        bool current_pause_timer_when_idle = settings?.get_boolean("idle-pause-timer") ?? true;
+        int current_idle_duration = settings?.get_int("idle-duration") ?? 1;
 
         var entry_baseurl = new Gtk.Entry();
         entry_baseurl.set_hexpand(true);
@@ -419,10 +425,22 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         entry_apitoken.set_text(current_api_token);
         entry_apitoken.visibility = false;
 
+        var switch_pause_timer_when_idle = new Gtk.Switch();
+        switch_pause_timer_when_idle.set_halign(Gtk.Align.START);
+        switch_pause_timer_when_idle.set_active(current_pause_timer_when_idle);
+
+        var spin_idle_duration = new Gtk.SpinButton.with_range(1, 240, 1);
+        spin_idle_duration.set_hexpand(true);
+        spin_idle_duration.set_value(current_idle_duration);
+
         grid.attach(label_baseurl_title, 0, 0, 1, 1);
         grid.attach(entry_baseurl, 1, 0, 1, 1);
         grid.attach(label_apitoken_title, 0, 1, 1, 1);
         grid.attach(entry_apitoken, 1, 1, 1, 1);
+        grid.attach(label_pause_timer_when_idle_title, 0, 2, 1, 1);
+        grid.attach(switch_pause_timer_when_idle, 1, 2, 1, 1);
+        grid.attach(label_idle_duration_title, 0, 3, 1, 1);
+        grid.attach(spin_idle_duration, 1, 3, 1, 1);
         box.add(grid);
 
         var hbox_buttons = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
@@ -438,6 +456,9 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             string new_api_token = entry_apitoken.get_text() ?? "";
 
             store_api_token(new_api_token);
+
+            timer_manager.set_pause_timer_when_idle(switch_pause_timer_when_idle.get_active());
+            timer_manager.set_idle_duration(spin_idle_duration.get_value_as_int());
 
             timer_manager.set_api_info(new_base_url, new_api_token);
 
@@ -501,7 +522,7 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
             button_new.set_sensitive(false);
         }
         else {
-            var show_start = has_last_timesheet() ? true : false;
+            var show_start = timer_manager.has_last_timesheet() ? true : false;
             button_start.set_sensitive(show_start);
             button_stop.set_sensitive(false);
             button_new.set_sensitive(true);
@@ -547,19 +568,5 @@ public class KimaiTimetrackerWindow : Budgie.Popover {
         } catch (GLib.Error e) {
             show_warning("Could not store API token: %s".printf(e.message));
         }
-    }
-
-    private bool has_last_timesheet() {
-        var customer_id = settings?.get_int("last-customer");
-        var project_id = settings?.get_int("last-project");
-        var activity_id = settings?.get_int("last-activity");
-        var description = settings?.get_string("last-description");
-
-        var has_customer = customer_id != -1;
-        var has_project = project_id != -1;
-        var has_activity = activity_id != -1;
-        var has_description = description != "";
-
-        return has_customer && has_project && has_activity && has_description;
     }
 }
