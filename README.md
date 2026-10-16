@@ -37,15 +37,18 @@ Replace `<version>` with the actual version number in the filename.
 
 
 ## Building
+
 ### Prerequisites
+
 Ensure you have the required dependencies installed:
+
 ```bash
 sudo apt install budgie-core-dev
-sudo apt install libgtk-3-dev libglib2.0-dev
+sudo apt install libgtk-3-dev libglib2.0-dev gettext
 sudo apt install libjson-glib-dev libsoup2.4-dev libsecret-1-dev
+sudo apt install libx11-dev libxext-dev libxss-dev libwayland-dev
 sudo apt install meson ninja-build valac
 ```
-
 
 ### Building the applet
 
